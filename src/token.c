@@ -1,12 +1,8 @@
 /* 
  * Copyright (c) Ronak Chauhan
  * This file is part of plz and is licensed under the terms of the MIT License.
- * See LICENSE.md for more details.
+ * See LICENSE for more details.
  */
-
-
-#ifndef TOKEN_C
-#define TOKEN_C
 
 
 #include <stdio.h>
@@ -118,11 +114,9 @@ void print_token(token_t t)
 		printf("NOTEQUAL\n");
 		break;
 
-
 		case COMMA:
 		printf("COMMA\n");
 		break;
-
 
 		case SEMICOLON:
 		printf("SEMICOLON\n");
@@ -144,12 +138,13 @@ void print_token(token_t t)
 		printf("RPAREN\n");
 		break;
 
+		case LIST_END:
+		printf("LIST_END");
+		break;
+
 		default:
 		printf("ERROR\n");
 		break;
 	}
 	printf("\n");
 }
-
-
-#endif

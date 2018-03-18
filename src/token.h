@@ -1,7 +1,7 @@
 /* 
  * Copyright (c) Ronak Chauhan
  * This file is part of plz and is licensed under the terms of the MIT License.
- * See LICENSE.md for more details.
+ * See LICENSE for more details.
  */
 
 
@@ -25,8 +25,14 @@ typedef enum {
 	EXCLAMATION, LPAREN, RPAREN,
 
 	IDENT, NUM,
-	ERROR
+	ERROR,
 
+	/*
+	 * This will be used to mark end of the token list,
+	 * and is not a part of the language.
+	 */
+	LIST_END
+	
 } symbol_t;
 
 
@@ -38,7 +44,6 @@ typedef struct {
 
 
 void clear_token(token_t *t);
-
 
 void print_token(token_t t);
 

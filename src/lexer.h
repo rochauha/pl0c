@@ -1,7 +1,7 @@
 /* 
  * Copyright (c) Ronak Chauhan
  * This file is part of plz and is licensed under the terms of the MIT License.
- * See LICENSE.md for more details.
+ * See LICENSE for more details.
  */
 
 
@@ -11,8 +11,9 @@
 
 #include "token.h"
 
-size_t scan(const char *source, char **buf);
+void scan(const char *source, char **buf);
 
 void set_keyword(token_t *t);
+
 
 #endif

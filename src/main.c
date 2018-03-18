@@ -1,7 +1,7 @@
 /* 
  * Copyright (c) Ronak Chauhan
  * This file is part of plz and is licensed under the terms of the MIT License.
- * See LICENSE.md for more details.
+ * See LICENSE for more details.
  */
 
 
@@ -15,13 +15,13 @@ int main(int argc, char **argv)
 {	
 	/* Memory buffer to be associated with the token stream */
 	char *token_buf;
-	size_t token_list_len = scan(argv[1], &token_buf);
+	scan(argv[1], &token_buf);
 
 	token_t *token_list = (token_t *)(token_buf);
-	printf("%zu\n", token_list_len);
 
-	for (int i = 0; i < token_list_len; i++) {
-		print_token(token_list[i]);
+	while (token_list->symbol != LIST_END) {
+		print_token(*(token_list));
+		token_list++;
 	}
 
 	free(token_buf);

@@ -1,12 +1,8 @@
 /* 
  * Copyright (c) Ronak Chauhan
  * This file is part of plz and is licensed under the terms of the MIT License.
- * See LICENSE.md for more details.
+ * See LICENSE for more details.
  */
-
-
-#ifndef LEXER_C
-#define LEXER_C
 
 
 #define _POSIX_C_SOURCE 200809L // for using open_memstream
@@ -19,23 +15,21 @@
 
 bool valid_char(char c)
 {
-	bool x = isspace(c) || isalnum(c) ||
+	return isspace(c) || isalnum(c) ||
 	c == '+' || c == '-' || c == '*' ||
 	c == '/' || c == '=' || c == '<' ||
 	c == '>' || c == ',' || c == ';' ||
 	c == '?' || c == '(' || c == ')';
-	return x;
 }
+
 
 /*
  * Scan entire source file, return number of tokens collected
  */
-size_t scan(const char *source, char **buf)
+void scan(const char *source, char **buf)
 {
 	token_t token_holder;
 	size_t init_len = 0;
-	size_t n_elements = 0;
-
 	FILE *fin = fopen(source, "r");
 	
 	/* file stream associated with memory buffer */
@@ -202,10 +196,13 @@ size_t scan(const char *source, char **buf)
 		 */
 		fwrite (&token_holder, 1, sizeof(token_holder), token_stream);
 		fflush(token_stream);
-		n_elements++;
 	}
+
+	clear_token(&token_holder);
+	token_holder.symbol = LIST_END;
+	fwrite (&token_holder, 1, sizeof(token_holder), token_stream);
+	fflush(token_stream);
 	fclose(token_stream);
-	return n_elements;
 }
 
 
@@ -247,6 +244,3 @@ void set_keyword(token_t *t)
 	else if (strcmp(t->value, "ODD") == 0)
 		t->symbol = ODD;
 }
-
-
-#endif
