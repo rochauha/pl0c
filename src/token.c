@@ -18,124 +18,127 @@ void clear_token(token_t *t) {
 }
 
 
-void print_token(token_t t)
+void print_symbol(symbol_t s)
 {
-	printf("%s\n%d\n", t.value, t.num_value);
-	switch (t.symbol) {
+	switch (s) {
+		case ASSIGN:
+		printf("ASSIGN");
+		break;
+		
 		case CONST:
-		printf("CONST\n");
+		printf("CONST");
 		break;
 
 		case VAR:
-		printf("VAR\n");
+		printf("VAR");
 		break;
 
 		case PROCEDURE:
-		printf("PROCEDURE\n");
+		printf("PROCEDURE");
 		break;
 
 		case CALL:
-		printf("CALL\n");
+		printf("CALL");
 		break;
 
 		case BEGIN:
-		printf("BEGIN\n");
+		printf("BEGIN");
 		break;
 
 		case END:
-		printf("END\n");
+		printf("END");
 		break;
 
 		case IF:
-		printf("IF\n");
+		printf("IF");
 		break;
 
-		case THEN:
-		printf("THEN\n");
+		case ELSE:
+		printf("ELSE");
 		break;
 		
 		case WHILE:
-		printf("WHILE\n");
-		break;
-
-		case DO:
-		printf("DO\n");
+		printf("WHILE");
 		break;
 
 		case ODD:
-		printf("ODD\n");
+		printf("ODD");
 		break;
 
 		case IDENT:
-		printf("IDENT\n");
+		printf("IDENT");
 		break;
 
 		case NUM:
-		printf("NUM\n");
+		printf("NUM");
 		break;
 
 		case PLUS:
-		printf("PLUS\n");
+		printf("PLUS");
 		break;
 
 		case MINUS:
-		printf("MINUS\n");
+		printf("MINUS");
 		break;
 
 		case TIMES:
-		printf("TIMES\n");
+		printf("TIMES");
 		break;
 
 		case SLASH:
-		printf("SLASH\n");
+		printf("SLASH");
 		break;
 
 		case GTE:
-		printf("GTE\n");
+		printf("GTE");
 		break;
 
 		case LTE:
-		printf("LTE\n");
+		printf("LTE");
 		break;
 
 		case GREATER:
-		printf("GREATER\n");
+		printf("GREATER");
 		break;
 
 		case LESSER:
-		printf("LESSER\n");
+		printf("LESSER");
 		break;
 
 		case EQUAL:
-		printf("EQUAL\n");
+		printf("EQUAL");
 		break;
 
 		case NOTEQUAL:
-		printf("NOTEQUAL\n");
+		printf("NOTEQUAL");
 		break;
 
 		case COMMA:
-		printf("COMMA\n");
+		printf("COMMA");
+		break;
+
+		case COLON:
+		printf("COLON");
 		break;
 
 		case SEMICOLON:
-		printf("SEMICOLON\n");
-		break;
-
-		case QUESTIONMARK:
-		printf("QUESTIONMARK\n");
-		break;
-
-		case EXCLAMATION:
-		printf("EXCLAMATION\n");
+		printf("SEMICOLON");
 		break;
 
 		case LPAREN:
-		printf("LPAREN\n");
+		printf("LPAREN");
 		break;
 
 		case RPAREN:
-		printf("RPAREN\n");
+		printf("RPAREN");
+		break;
+
+		case PRINT:
+		printf("PRINT");
+		break;
+
+		case SCAN:
+		printf("SCAN");
 		break;
 
 		case LIST_END:
@@ -143,8 +146,15 @@ void print_token(token_t t)
 		break;
 
 		default:
-		printf("ERROR\n");
+		printf("ERROR");
 		break;
 	}
-	printf("\n");
+}
+
+
+void print_token(token_t t)
+{
+	printf("%s\n%d\n", t.value, t.num_value);
+	print_symbol(t.symbol);
+	printf("\n\n");
 }

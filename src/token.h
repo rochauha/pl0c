@@ -12,8 +12,8 @@
 typedef enum {
 	// keywords
 	CONST = 0, VAR, PROCEDURE, CALL,
-	BEGIN, END, IF, THEN, WHILE, DO,
-	ODD,
+	BEGIN, END, IF, ELSE, WHILE,
+	ODD, ASSIGN, PRINT, SCAN,
 
 	// operators
 	PLUS, MINUS, TIMES, SLASH,
@@ -21,8 +21,8 @@ typedef enum {
 	EQUAL, NOTEQUAL,
 
 	// other symbols
-	COMMA, SEMICOLON, QUESTIONMARK,
-	EXCLAMATION, LPAREN, RPAREN,
+	COMMA, COLON, SEMICOLON,
+	LPAREN, RPAREN,
 
 	IDENT, NUM,
 	ERROR,
@@ -46,6 +46,8 @@ typedef struct {
 void clear_token(token_t *t);
 
 void print_token(token_t t);
+
+void print_symbol(symbol_t s);
 
 
 #endif

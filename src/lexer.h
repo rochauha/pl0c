@@ -13,7 +13,4 @@
 
 void scan(const char *source, char **buf);
 
-void set_keyword(token_t *t);
-
-
 #endif

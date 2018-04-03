@@ -13,18 +13,23 @@
 #include "lexer.h"
 
 
-bool valid_char(char c)
+static bool valid_char(char c);
+static void set_keyword(token_t *t);
+
+
+static bool valid_char(char c)
 {
 	return isspace(c) || isalnum(c) ||
 	c == '+' || c == '-' || c == '*' ||
 	c == '/' || c == '=' || c == '<' ||
-	c == '>' || c == ',' || c == ';' ||
-	c == '?' || c == '(' || c == ')';
+	c == '>' || c == ',' || c == ':' ||
+	c == ';' || c == '_' || c == '!' ||
+	c == '(' || c == ')';
 }
 
 
 /*
- * Scan entire source file, return number of tokens collected
+ * Scan entire source file
  */
 void scan(const char *source, char **buf)
 {
@@ -68,11 +73,11 @@ void scan(const char *source, char **buf)
 			}
 		}
 
-		else if (isalpha(c)) {
+		else if (isalpha(c) || c == '_') {
 			clear_token(&token_holder);
 			i = 0;
 			token_holder.symbol = IDENT;
-			while (isalnum(c)) {
+			while (isalnum(c) || c == '_') {
 				token_holder.value[i++] = c;
 				c = fgetc(fin);
 			}
@@ -114,6 +119,13 @@ void scan(const char *source, char **buf)
 			c = fgetc(fin);	
 		}
 
+		else if (c == ':') {
+			clear_token(&token_holder);			
+			token_holder.symbol = COLON;
+			token_holder.value[0] = ':';
+			c = fgetc(fin);
+		}
+
 		else if (c == ';') {
 			clear_token(&token_holder);			
 			token_holder.symbol = SEMICOLON;
@@ -122,15 +134,17 @@ void scan(const char *source, char **buf)
 		}
 
 		else if (c == '!') {
-			clear_token(&token_holder);			
-			token_holder.symbol = EXCLAMATION;
+			clear_token(&token_holder);
 			token_holder.value[0] = '!';
-			c = fgetc(fin);
-
+			c = fgetc(fin);	
 			// Check for next '=' char
 			if (c == '=') {
 				token_holder.symbol = NOTEQUAL;
 				token_holder.value[1] = '=';
+				c = fgetc(fin);
+			}
+			else {
+				token_holder.symbol = ERROR;
 				c = fgetc(fin);
 			}
 		}
@@ -140,7 +154,6 @@ void scan(const char *source, char **buf)
 			token_holder.symbol = GREATER;
 			token_holder.value[0] = '>';
 			c = fgetc(fin);
-
 			// Check for next '=' char
 			if (c == '=') {
 				token_holder.symbol = GTE;
@@ -154,27 +167,25 @@ void scan(const char *source, char **buf)
 			token_holder.symbol = LESSER;
 			token_holder.value[0] = '<';
 			c = fgetc(fin);
-	
 			// Check for next '=' char
 			if (c == '=') {
 				token_holder.symbol = LTE;
 				token_holder.value[1] = '=';
 				c = fgetc(fin);
-			}		
-		}
-
-		else if (c == '?') {
-			clear_token(&token_holder);
-			token_holder.symbol = QUESTIONMARK;
-			token_holder.value[0] = '?';
-			c = fgetc(fin);
+			}
 		}
 
 		else if (c == '=') {
 			clear_token(&token_holder);			
-			token_holder.symbol = EQUAL;
+			token_holder.symbol = ASSIGN;
 			token_holder.value[0] = '=';
 			c = fgetc(fin);
+			// Check for next '=' char
+			if (c == '=') {
+				token_holder.symbol = EQUAL;
+				token_holder.value[1] = '=';
+				c = fgetc(fin);
+			}
 		}
 
 		else if (c == '(') {
@@ -191,7 +202,8 @@ void scan(const char *source, char **buf)
 			c = fgetc(fin);
 		}
 
-		/* Write token to token_stream, basically it is pushed to the
+		/* 
+		 * Write token to token_stream, basically it is pushed to the
 		 * dynamic memory buffer associated with token_stream
 		 */
 		fwrite (&token_holder, 1, sizeof(token_holder), token_stream);
@@ -209,38 +221,55 @@ void scan(const char *source, char **buf)
 /* 
  * Set symbol to respective keyword if it's string matches that keyword 
  */
-void set_keyword(token_t *t)
+static void set_keyword(token_t *t)
 {
-	if (strcmp(t->value, "CONST") == 0)
+	/* 
+	 * Making keywords case insensitive. 
+	 * The original string associated with the token is not affected 
+	 */
+	char string[32];
+	char *c_ptr = string;
+	
+	strcpy(string, t->value);
+
+	while (*c_ptr) {
+		*c_ptr = toupper(*c_ptr);
+		c_ptr++;
+	}
+
+	if (strcmp(string, "CONST") == 0)
 		t->symbol = CONST;
 
-	else if (strcmp(t->value, "VAR") == 0)
+	else if (strcmp(string, "VAR") == 0)
 		t->symbol = VAR;
-	
-	else if (strcmp(t->value, "PROCEDURE") == 0)
+
+	else if (strcmp(string, "PROCEDURE") == 0)
 		t->symbol = PROCEDURE;
-	
-	else if (strcmp(t->value, "CALL") == 0)
+
+	else if (strcmp(string, "CALL") == 0)
 		t->symbol = CALL;
-	
-	else if (strcmp(t->value, "BEGIN") == 0)
+
+	else if (strcmp(string, "BEGIN") == 0)
 		t->symbol = BEGIN;
-	
-	else if (strcmp(t->value, "END") == 0)
+
+	else if (strcmp(string, "END") == 0)
 		t->symbol = END;
-	
-	else if (strcmp(t->value, "IF") == 0)
+
+	else if (strcmp(string, "IF") == 0)
 		t->symbol = IF;
-	
-	else if (strcmp(t->value, "THEN") == 0)
-		t->symbol = THEN;
-	
-	else if (strcmp(t->value, "WHILE") == 0)
+
+	else if (strcmp(string, "ELSE") == 0)
+		t->symbol = ELSE;
+
+	else if (strcmp(string, "WHILE") == 0)
 		t->symbol = WHILE;
-	
-	else if (strcmp(t->value, "DO") == 0)
-		t->symbol = DO;
-	
-	else if (strcmp(t->value, "ODD") == 0)
+
+	else if (strcmp(string, "ODD") == 0)
 		t->symbol = ODD;
+
+	else if (strcmp(string, "PRINT") == 0)
+		t->symbol = PRINT;
+
+	else if (strcmp(string, "SCAN") == 0)
+		t->symbol = SCAN;
 }
