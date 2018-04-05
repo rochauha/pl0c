@@ -69,6 +69,7 @@ static void parse_block()
 		while (token_ptr->symbol == COMMA) {
 			accept(COMMA);
 			accept(IDENT);
+			accept(ASSIGN);
 			accept(NUM);
 		}
 		accept(SEMICOLON);
