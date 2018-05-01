@@ -4,7 +4,7 @@ CC = clang
 CFLAGS = -std=c11 -c -O0 -Wall
 
 
-plz : $(OBJECTS)
+$(OUTPUT_BIN) : $(OBJECTS)
 	$(CC) -o $(OUTPUT_BIN) $(OBJECTS)
 
 main.o: src/main.c
@@ -20,10 +20,9 @@ token.o: src/token.c src/token.h
 	$(CC) $(CFLAGS) src/token.c
 
 
-.PHONY: clean_obj
+.PHONY: clean_obj clean_all
 clean_obj:
 	rm -f *.o
 
-.PHONY: clean_all
 clean_all:
 	rm -f *.o $(OUTPUT_BIN)
