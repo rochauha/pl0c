@@ -5,15 +5,15 @@
  */
 
 
-
 #ifndef PARSER_H
 #define PARSER_H
 
 #include "token.h"
+#include "ast.h"
 
 void set_token_ptr(token_t **t);
 
-void parse();
+ast_node_t *parse();
 
 
 #endif

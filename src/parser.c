@@ -5,26 +5,27 @@
  */
 
 /*
- * Initial parser, just does syntax analysis.
- * Error recovery is terrible as of now.
+ * Key idea is to return AST nodes when a particular construct is parsed.
+ * Error recovery is terrible as of now. Syntax errors would lead to a broken tree.
  */
 
 #include <stdio.h>
 #include "token.h"
 #include "parser.h"
+#include "ast.h"
 
 
 static token_t *token_ptr;
 
 static void accept();
 
-static void parse_block();
-static void parse_statement_block();
-static void parse_statement();
-static void parse_condition();
-static void parse_expression();
-static void parse_term();
-static void parse_factor();
+static ast_node_t* parse_block();
+static ast_node_t* parse_statement_block();
+static ast_node_t* parse_statement();
+static ast_node_t* parse_condition();
+static ast_node_t* parse_expression();
+static ast_node_t* parse_term();
+static ast_node_t* parse_factor();
 
 
 void set_token_ptr(token_t **t)
@@ -33,10 +34,12 @@ void set_token_ptr(token_t **t)
 }
 
 
-void parse()
+ast_node_t *parse()
 {
-	parse_block();
+	ast_node_t *root = parse_block();
+	root->label = AST_ROOT;
 	accept(LIST_END);
+	return root;
 }
 
 
@@ -59,129 +62,200 @@ static void accept(symbol_t s)
 }
 
 
-static void parse_block()
+static ast_node_t* parse_block()
 {
+	token_t block_token = {"BEGIN", 0, BEGIN};
+	ast_node_t *main_root = new_ast_node(block_token);
+	main_root->label = AST_BLOCK;
+
+	ast_node_t *const_decl = NULL;
+	ast_node_t *var_decl = NULL;
+	ast_node_t *proc_decl = NULL;
+	ast_node_t *new_child = NULL;
+	
 	if (token_ptr->symbol == CONST) {
 		accept(CONST);
+		const_decl = new_ast_node(*(token_ptr-1));
 		accept(IDENT);
+		new_child = new_ast_node(*(token_ptr-1));
+		append_child(const_decl, new_child);
 		accept(ASSIGN);
 		accept(NUM);
 		while (token_ptr->symbol == COMMA) {
 			accept(COMMA);
 			accept(IDENT);
+			new_child = new_ast_node(*(token_ptr-1));
+			append_child(const_decl, new_child);
 			accept(ASSIGN);
 			accept(NUM);
 		}
 		accept(SEMICOLON);
+		append_child(main_root, const_decl);
 	}
 
 	if (token_ptr->symbol == VAR) {
 		accept(VAR);
+		var_decl = new_ast_node(*(token_ptr-1));
 		accept(IDENT);
+		new_child = new_ast_node(*(token_ptr-1));
+		append_child(var_decl, new_child);
 		while (token_ptr->symbol == COMMA) {
 			accept(COMMA);
 			accept(IDENT);
+			new_child = new_ast_node(*(token_ptr-1));
+			append_child(var_decl, new_child);
 		}
 		accept(SEMICOLON);
+		append_child(main_root, var_decl);
 	}
 
 	while (token_ptr->symbol == PROCEDURE) {
 		accept(PROCEDURE);
+		proc_decl = new_ast_node(*(token_ptr-1));
 		accept(IDENT);
+		new_child = new_ast_node(*(token_ptr-1));
+		append_child(proc_decl, new_child);
 		accept(COLON);
-		parse_block();
+		new_child = parse_block();
+		append_child(proc_decl, new_child);
+		append_child(main_root, proc_decl);
 	}
-
-	parse_statement_block();
+	
+	new_child = parse_statement_block();
+	append_child(main_root, new_child);
+	return main_root;
 }
 
 
-static void parse_statement_block()
+static ast_node_t* parse_statement_block()
 {
+	ast_node_t *main_root = NULL;
+	ast_node_t *new_child = NULL;
+
 	if (token_ptr->symbol == BEGIN) {
 		accept(BEGIN);
+		main_root = new_ast_node(*(token_ptr-1));	
 		while (token_ptr->symbol == IDENT || token_ptr->symbol == CALL ||
 				 token_ptr->symbol == IF || token_ptr->symbol == WHILE ||
 				 token_ptr->symbol == PRINT || token_ptr->symbol == SCAN ) {
-			parse_statement();
+			new_child = parse_statement();
+			append_child(main_root, new_child);
 		}
 		accept(END);
 	}
 
 	else {
-		parse_statement();
+		main_root = parse_statement();
 	}
+
+	return main_root;
 }
 
 
-static void parse_statement()
+static ast_node_t* parse_statement()
 {
+	ast_node_t *main_root = NULL;
+	ast_node_t *operand = NULL;
+	ast_node_t *new_child = NULL; /* Using this for better code readability */
+
 	if (token_ptr->symbol == IDENT) {
 		accept(IDENT);
+		operand = new_ast_node(*(token_ptr-1));
 		accept(ASSIGN);
-		parse_expression();
+		main_root = new_ast_node(*(token_ptr-1));
+		append_child(main_root, operand);
+		operand = parse_expression();
+		append_child(main_root, operand);
 		accept(SEMICOLON);
 	}
 
 	else if (token_ptr->symbol == CALL) {
 		accept(CALL);
+		main_root = new_ast_node(*(token_ptr-1));
 		accept(IDENT);
+		operand = new_ast_node(*(token_ptr-1));
+		append_child(main_root, operand);
 		accept(SEMICOLON);
 	}
 
 	else if (token_ptr->symbol == IF) {
 		accept(IF);
-		parse_condition();
+		main_root = new_ast_node(*(token_ptr-1));
+		new_child = parse_condition();
+		append_child(main_root, new_child);
 		accept(COLON);
-		parse_statement_block();
+		new_child = parse_statement_block();
+		append_child(main_root, new_child);
 		if (token_ptr->symbol == ELSE) {
 			accept(ELSE);
 			accept(COLON);
-			parse_statement_block();
+			new_child = parse_statement_block();
+			append_child(main_root, new_child);
 		}
 	}
 
 	else if (token_ptr->symbol == WHILE) {
 		accept(WHILE);
-		parse_condition();
+		main_root = new_ast_node(*(token_ptr-1));
+		new_child = parse_condition();
+		append_child(main_root, new_child);
 		accept(COLON);
-		parse_statement_block();
+		new_child = parse_statement_block();
+		append_child(main_root, new_child);
 	}
 
 	else if (token_ptr->symbol == PRINT) {
 		accept(PRINT);
+		main_root = new_ast_node(*(token_ptr-1));
 		if (token_ptr->symbol == IDENT) {
 			accept(IDENT);
+			operand = new_ast_node(*(token_ptr-1));
+			append_child(main_root, operand);
 		}
 		else {
 			accept(NUM);
+			operand = new_ast_node(*(token_ptr-1));
+			append_child(main_root, operand);
 		}
 		accept(SEMICOLON);
 	}
 
 	else if (token_ptr->symbol == SCAN) {
 		accept(SCAN);
+		main_root = new_ast_node(*(token_ptr-1));
 		accept(IDENT);
+		operand = new_ast_node(*(token_ptr-1));
+		append_child(main_root, operand);
 		accept(SEMICOLON);
 	}
+
+	return main_root;
 }
 
 
-static void parse_condition()
+static ast_node_t* parse_condition()
 {
+	ast_node_t *main_root = NULL;
+	ast_node_t *operand = NULL;
 	if (token_ptr->symbol == ODD) {
 		accept(ODD);
-		parse_expression();
+		main_root = new_ast_node(*(token_ptr-1));
+		operand = parse_expression();
+		append_child(main_root, operand);
 	}
 
 	else {
-		parse_expression();
+		operand = parse_expression();
 
 		if (token_ptr->symbol == GTE || token_ptr->symbol == LTE ||
 			token_ptr->symbol == GREATER || token_ptr->symbol == LESSER ||
 			token_ptr->symbol == NOTEQUAL || token_ptr->symbol == EQUAL) {
+			
+			main_root = new_ast_node(*token_ptr);
 			token_ptr++;
-			parse_expression();
+			append_child(main_root, operand);
+			operand = parse_expression();
+			append_child(main_root, operand);
 		}
 
 		else {
@@ -189,64 +263,129 @@ static void parse_condition()
 			token_ptr++;
 		}
 	}
+
+	return main_root;
 }
 
 
-static void parse_expression()
+static ast_node_t* parse_expression()
 {
+	ast_node_t *operand = NULL;
+	ast_node_t *tmp_root = NULL;
+	ast_node_t *main_root = NULL;
+	ast_node_t *current_root = NULL;
+
 	if (token_ptr->symbol == PLUS) {
 		accept(PLUS);
+		current_root = new_ast_node(*(token_ptr-1));
+		main_root = current_root;
 	}
 
 	else if (token_ptr->symbol == MINUS) {
 		accept(MINUS);
+		current_root = new_ast_node(*(token_ptr-1));	
+		main_root = current_root;
 	}
 
-	parse_term();
+	operand = parse_term();
 
 	while (token_ptr->symbol == PLUS || token_ptr->symbol == MINUS) {
 		if (token_ptr->symbol == PLUS) {
 			accept(PLUS);
+			tmp_root = current_root;
+			current_root = new_ast_node(*(token_ptr-1));
+			append_child(current_root, operand);
+			if (tmp_root) {
+				append_child(tmp_root, current_root);
+				main_root = (main_root) ? main_root : tmp_root;
+			}
 		}
 
 		else if (token_ptr->symbol == MINUS) {
 			accept(MINUS);
+			tmp_root = current_root;
+			current_root = new_ast_node(*(token_ptr-1));
+			append_child(current_root, operand);
+			if (tmp_root) {
+				append_child(tmp_root, current_root);
+				main_root = (main_root) ? main_root : tmp_root;
+			}
 		}
-		parse_term();
+
+		operand = parse_term();
+		if (token_ptr->symbol != PLUS && token_ptr->symbol != MINUS) {
+			/* Next symbol is not an operation, so append the operand to the
+			 * current operation. The loop will break after this
+			 */
+			append_child(current_root, operand);
+			main_root = (main_root) ? main_root : current_root;
+		}
 	}
+
+	return (main_root) ? main_root : operand;
 }
 
 
-static void parse_term()
+static ast_node_t* parse_term()
 {
-	parse_factor();
+	ast_node_t *operand = parse_factor();
+	ast_node_t *tmp_root = NULL;
+	ast_node_t *main_root = NULL;
+	ast_node_t *current_root = NULL;
+	
 	while (token_ptr->symbol == TIMES || token_ptr->symbol == SLASH) {
 		if (token_ptr->symbol == TIMES) {
 			accept(TIMES);
+			tmp_root = current_root;
+			current_root = new_ast_node(*(token_ptr-1));
+			append_child(current_root, operand);
+			if (tmp_root) {
+				append_child(tmp_root, current_root);
+				main_root = (main_root) ? main_root : tmp_root;
+			}
 		}
 
 		else if (token_ptr->symbol == SLASH) {
 			accept(SLASH);
+			tmp_root = current_root;
+			current_root = new_ast_node(*(token_ptr-1));
+			append_child(current_root, operand);
+			if (tmp_root) {
+				append_child(tmp_root, current_root);
+				main_root = (main_root) ? main_root : tmp_root;
+			}
 		}
 
-		parse_factor();
+		operand = parse_factor();
+		if (token_ptr->symbol != TIMES && token_ptr->symbol != SLASH) {
+			/* Next symbol is not an operation, so append the operand to the
+			 * current operation. The loop will break after this
+			 */
+			append_child(current_root, operand);
+			main_root = (main_root) ? main_root : current_root;
+		}
 	}
+
+	return (main_root) ? main_root : operand;
 }
 
 
-static void parse_factor()
+static ast_node_t* parse_factor()
 {
 	if (token_ptr->symbol == NUM) {
 		accept(NUM);
+		return new_ast_node(*(token_ptr-1));
 	}
 
 	else if (token_ptr->symbol == LPAREN) {
 		accept(LPAREN);
-		parse_expression();
+		ast_node_t *main_root = parse_expression();
 		accept(RPAREN);
+		return main_root;
 	}
 
 	else {
 		accept(IDENT);
+		return new_ast_node(*(token_ptr-1));
 	}
 }
