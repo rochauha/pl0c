@@ -154,7 +154,7 @@ static void print_ast_label(ast_label_t label)
 
 ast_node_t *new_ast_node(token_t token)
 {
-	ast_node_t *new_node = calloc(sizeof(ast_node_t), 1);
+	ast_node_t *new_node = calloc(1, sizeof(ast_node_t));
 	new_node->label = get_label(token);
 	new_node->first_child = NULL;
 	new_node->next_sibling = NULL;
