@@ -72,6 +72,7 @@ static ast_node_t* parse_block()
 	ast_node_t *var_decl = NULL;
 	ast_node_t *proc_decl = NULL;
 	ast_node_t *new_child = NULL;
+	ast_node_t *new_child_num = NULL;
 	
 	if (token_ptr->symbol == CONST) {
 		accept(CONST);
@@ -81,6 +82,9 @@ static ast_node_t* parse_block()
 		append_child(const_decl, new_child);
 		accept(ASSIGN);
 		accept(NUM);
+		new_child_num = new_ast_node(*(token_ptr-1));
+		append_child(new_child, new_child_num);
+
 		while (token_ptr->symbol == COMMA) {
 			accept(COMMA);
 			accept(IDENT);
@@ -88,6 +92,8 @@ static ast_node_t* parse_block()
 			append_child(const_decl, new_child);
 			accept(ASSIGN);
 			accept(NUM);
+			new_child_num = new_ast_node(*(token_ptr-1));
+			append_child(new_child, new_child_num);
 		}
 		accept(SEMICOLON);
 		append_child(main_root, const_decl);
