@@ -18,7 +18,7 @@ void clear_token(token_t *t) {
 }
 
 
-void print_symbol(symbol_t s)
+void print_symbol(token_symbol_t s)
 {
 	switch (s) {
 		case ASSIGN:

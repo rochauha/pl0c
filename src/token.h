@@ -33,13 +33,13 @@ typedef enum {
 	 */
 	LIST_END
 	
-} symbol_t;
+} token_symbol_t;
 
 
 typedef struct {
 	char value[32];
 	int num_value;
-	symbol_t symbol;
+	token_symbol_t symbol;
 } token_t;
 
 
@@ -47,7 +47,7 @@ void clear_token(token_t *t);
 
 void print_token(token_t t);
 
-void print_symbol(symbol_t s);
+void print_symbol(token_symbol_t s);
 
 
 #endif

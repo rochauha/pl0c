@@ -43,7 +43,7 @@ ast_node_t *parse()
 }
 
 
-static void accept(symbol_t s) 
+static void accept(token_symbol_t s) 
 {
 	if (token_ptr->symbol == s) {
 		//print_token(*token_ptr);
