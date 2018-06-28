@@ -178,14 +178,27 @@ void append_child(ast_node_t *parent, ast_node_t *new_child)
 	}
 }
 
+size_t child_count(ast_node_t *node) {
+	size_t count = 0;
+	if (node->first_child) {
+		printf("child_count : ");
+		ast_node_t *current_child = node->first_child;
+		while (current_child) {
+			count++;
+			current_child = current_child->next_sibling;
+		}
+	}
+	return count;
+}
+
 
 void print_ast_node(ast_node_t *node)
 {
 	print_ast_label(node->label);
+	printf("%zu\n", child_count(node));
 	// todo: add code to print identifiers and their details (scope, value, etc);
 	printf("\n\n");
 }
-
 
 // Printing AST nodes in preorder sequence
 void print_ast(ast_node_t *root)
