@@ -172,7 +172,7 @@ void append_child(ast_node_t *parent, ast_node_t *new_child)
 	else {
 		ast_node_t *current_child = parent->first_child;
 		while (current_child->next_sibling) {
-			current_child++;
+			current_child = current_child->next_sibling;
 		}
 		current_child->next_sibling = new_child;
 	}
@@ -181,7 +181,6 @@ void append_child(ast_node_t *parent, ast_node_t *new_child)
 size_t child_count(ast_node_t *node) {
 	size_t count = 0;
 	if (node->first_child) {
-		printf("child_count : ");
 		ast_node_t *current_child = node->first_child;
 		while (current_child) {
 			count++;
@@ -195,7 +194,7 @@ size_t child_count(ast_node_t *node) {
 void print_ast_node(ast_node_t *node)
 {
 	print_ast_label(node->label);
-	printf("%zu\n", child_count(node));
+	printf("child_count : %zu\n", child_count(node));
 	// todo: add code to print identifiers and their details (scope, value, etc);
 	printf("\n\n");
 }
