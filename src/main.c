@@ -11,6 +11,7 @@
 #include "lexer.h"
 #include "parser.h"
 #include "ast.h"
+#include "symtab.h"
 
 
 int main(int argc, char **argv)
@@ -29,9 +30,20 @@ int main(int argc, char **argv)
 
 	set_token_ptr(&token_list);
 	ast_node_t *root = parse();
-	printf("%zu\n", ast_node_count());
-	print_ast(root);
+	//printf("%zu\n", ast_node_count());
+	//print_ast(root);
+	
+	symbol_t *symbol_table = NULL;
+	run_semantic_checks(root, &symbol_table);
+	print_table(&symbol_table);
+	
+	printf("%zu\n", symbol_count());
+	if (semantic_error()) {
+		exit(EXIT_FAILURE);
+	}
+	
 	free(token_buf);
+
 	/*
 	The tree is not deleted manually (intentionally) as of now because rest
 	of the things are not in place yet.

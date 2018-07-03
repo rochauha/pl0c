@@ -26,9 +26,9 @@ typedef enum {
 
 } ast_label_t;
 
-
 typedef struct ast_node {
 	ast_label_t label;
+	char ident_name[32];
 	int num_value;
 	struct ast_node *first_child;
 	struct ast_node *next_sibling;
@@ -38,8 +38,6 @@ typedef struct ast_node {
 ast_node_t *new_ast_node(token_t token);
 
 void append_child(ast_node_t *parent, ast_node_t *new_child);
-
-void print_ast_node(ast_node_t *node);
 
 void print_ast(ast_node_t *root);
 

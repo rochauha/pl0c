@@ -1,5 +1,5 @@
 OUTPUT_BIN = plz
-OBJECTS = main.o ast.o parser.o lexer.o token.o
+OBJECTS = main.o symtab.o ast.o parser.o lexer.o token.o
 CC = clang
 CFLAGS = -std=c11 -c -O0 -Wall -g
 
@@ -9,6 +9,9 @@ $(OUTPUT_BIN) : $(OBJECTS)
 
 main.o: src/main.c
 	$(CC) $(CFLAGS) src/main.c
+
+symtab.o: src/symtab.c src/symtab.h
+	$(CC) $(CFLAGS) src/symtab.c
 
 ast.o: src/ast.c src/ast.h
 	$(CC) $(CFLAGS) src/ast.c	

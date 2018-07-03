@@ -7,6 +7,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "ast.h"
 
 static size_t global_node_count = 0;
@@ -158,6 +159,8 @@ ast_node_t *new_ast_node(token_t token)
 	new_node->label = get_label(token);
 	new_node->first_child = NULL;
 	new_node->next_sibling = NULL;
+	strcpy(new_node->ident_name, token.value);
+	new_node->num_value = token.num_value;
 	global_node_count++;
 	return new_node;
 }
@@ -178,7 +181,7 @@ void append_child(ast_node_t *parent, ast_node_t *new_child)
 	}
 }
 
-size_t child_count(ast_node_t *node) {
+static size_t child_count(ast_node_t *node) {
 	size_t count = 0;
 	if (node->first_child) {
 		ast_node_t *current_child = node->first_child;
@@ -191,13 +194,13 @@ size_t child_count(ast_node_t *node) {
 }
 
 
-void print_ast_node(ast_node_t *node)
+static void print_ast_node(ast_node_t *node)
 {
 	print_ast_label(node->label);
 	printf("child_count : %zu\n", child_count(node));
-	// todo: add code to print identifiers and their details (scope, value, etc);
 	printf("\n\n");
 }
+
 
 // Printing AST nodes in preorder sequence
 void print_ast(ast_node_t *root)
