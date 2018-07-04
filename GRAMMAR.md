@@ -1,4 +1,4 @@
-Here's the grammer followed by `plz`, which is a slightly modified version of the original grammar found on [Wikipedia](https://en.wikipedia.org/wiki/PL/0 "link to the Wikipedia page"). <br>
+Here's the grammer followed by `pl0c`, which is a slightly modified version of the original grammar found on [Wikipedia](https://en.wikipedia.org/wiki/PL/0 "link to the Wikipedia page"). <br>
 
 Changes:
 - Consecutive statements in a particular scope must be enclosed within a BEGIN-END block

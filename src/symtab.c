@@ -1,6 +1,6 @@
 /* 
  * Copyright (c) Ronak Chauhan
- * This file is part of plz and is licensed under the terms of the MIT License.
+ * This file is part of pl0c and is licensed under the terms of the MIT License.
  * See LICENSE for more details.
  */
 
@@ -78,7 +78,8 @@ static bool insert_sym(symbol_t **table, symbol_t *new_symbol_obj)
 }
 
 
-static void print_sym_type(sym_type_t type) {
+static void print_sym_type(sym_type_t type)
+{
 	switch (type) {
 		case SYM_CONST:
 		printf("SYM_CONST\n");
@@ -95,7 +96,8 @@ static void print_sym_type(sym_type_t type) {
 }
 
 
-void print_table(symbol_t **table) {
+void print_table(symbol_t **table)
+{
 	symbol_t *current_symbol = *table;
 	if (!current_symbol) printf("table empty\n");
 	while (current_symbol) {
@@ -108,7 +110,8 @@ void print_table(symbol_t **table) {
 }
 
 
-static size_t free_current_scope() {
+static size_t free_current_scope()
+{
 	size_t level = current_level;
 	size_t count = 0;
 	symbol_t *tmp;

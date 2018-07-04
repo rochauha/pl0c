@@ -1,4 +1,4 @@
-OUTPUT_BIN = plz
+OUTPUT_BIN = pl0c
 OBJECTS = main.o symtab.o ast.o parser.o lexer.o token.o
 CC = clang
 CFLAGS = -std=c11 -c -O0 -Wall -g
