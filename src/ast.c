@@ -8,10 +8,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 #include "ast.h"
+
 
 static size_t global_node_count = 0;
 
+// Ignore clang warnings in get_label
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wswitch"
+#pragma clang diagnostic ignored "-Wreturn-type"
 
 static ast_label_t get_label(token_t token)
 {
@@ -42,113 +48,38 @@ static ast_label_t get_label(token_t token)
 	}
 }
 
+#pragma clang diagnostic pop
+
 
 static void print_ast_label(ast_label_t label)
 {
 	switch(label) {
-		case AST_ROOT:
-		printf("AST_ROOT\n");
-		break;
-		
-		case AST_VAR_DECL:
-		printf("AST_VAR_DECL\n");
-		break;
-	
-		case AST_CONST_DECL:
-		printf("AST_CONST_DECL\n");
-		break;
-	
-		case AST_PROC_DECL:
-		printf("AST_PROC_DECL\n");
-		break;
-	
-		case AST_CALL:
-		printf("AST_CALL\n");
-		break;
-	
-		case AST_ADD:
-		printf("AST_ADD\n");
-		break;
-	
-		case AST_SUB:
-		printf("AST_SUB\n");
-		break;
-	
-		case AST_MUL:
-		printf("AST_MUL\n");
-		break;
-	
-		case AST_DIV:
-		printf("AST_DIV\n");
-		break;
-	
-		case AST_ASSIGN:
-		printf("AST_ASSIGN\n");
-		break;
-	
-		case AST_ODD:
-		printf("AST_ODD\n");
-		break;
-	
-		case AST_GTE:
-		printf("AST_GTE\n");
-		break;
-	
-		case AST_LTE:
-		printf("AST_LTE\n");
-		break;
-	
-		case AST_GT:
-		printf("AST_GT\n");
-		break;
-	
-		case AST_LT:
-		printf("AST_LT\n");
-		break;
-	
-		case AST_EQ:
-		printf("AST_EQ\n");
-		break;
-	
-		case AST_NEQ:
-		printf("AST_NEQ\n");
-		break;
-	
-		case AST_NUM:
-		printf("AST_NUM\n");
-		break;
-	
-		case AST_IDENT:
-		printf("AST_IDENT\n");
-		break;
-	
-		case AST_PRINT:
-		printf("AST_PRINT\n");
-		break;
-	
-		case AST_SCAN:
-		printf("AST_SCAN\n");
-		break;
-	
-		case AST_BLOCK:
-		printf("AST_BLOCK\n");
-		break;
-	
-		case AST_STMT_BLOCK:
-		printf("AST_STMT_BLOCK\n");
-		break;
-	
-		case AST_IF:
-		printf("AST_IF\n");
-		break;
-	
-		case AST_WHILE:
-		printf("AST_WHILE\n");
-		break;
-	
-		default:
-		printf("ERROR\n");
-		break;
+		case AST_ROOT: printf("AST_ROOT\n"); break;		
+		case AST_VAR_DECL: printf("AST_VAR_DECL\n"); break;	
+		case AST_CONST_DECL: printf("AST_CONST_DECL\n"); break;	
+		case AST_PROC_DECL: printf("AST_PROC_DECL\n"); break;	
+		case AST_CALL: printf("AST_CALL\n"); break;	
+		case AST_ADD: printf("AST_ADD\n"); break;	
+		case AST_SUB: printf("AST_SUB\n"); break;	
+		case AST_MUL: printf("AST_MUL\n"); break;	
+		case AST_DIV: printf("AST_DIV\n"); break;	
+		case AST_ASSIGN: printf("AST_ASSIGN\n"); break;	
+		case AST_ODD: printf("AST_ODD\n"); break;	
+		case AST_GTE: printf("AST_GTE\n"); break;	
+		case AST_LTE: printf("AST_LTE\n"); break;	
+		case AST_GT: printf("AST_GT\n"); break;	
+		case AST_LT: printf("AST_LT\n"); break;	
+		case AST_EQ: printf("AST_EQ\n"); break;	
+		case AST_NEQ: printf("AST_NEQ\n"); break;	
+		case AST_NUM: printf("AST_NUM\n"); break;	
+		case AST_IDENT: printf("AST_IDENT\n"); break;	
+		case AST_PRINT: printf("AST_PRINT\n"); break;	
+		case AST_SCAN: printf("AST_SCAN\n"); break;	
+		case AST_BLOCK: printf("AST_BLOCK\n"); break;	
+		case AST_STMT_BLOCK: printf("AST_STMT_BLOCK\n"); break;	
+		case AST_IF: printf("AST_IF\n"); break;	
+		case AST_WHILE: printf("AST_WHILE\n"); break;	
+		default: printf("ERROR\n"); break;
 	}
 }
 

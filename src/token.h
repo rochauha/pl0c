@@ -8,6 +8,7 @@
 #ifndef TOKEN_H
 #define TOKEN_H
 
+#include <stdint.h>
 
 typedef enum {
 	// keywords
@@ -38,7 +39,7 @@ typedef enum {
 
 typedef struct {
 	char value[32];
-	int num_value;
+	int64_t num_value;
 	token_symbol_t symbol;
 } token_t;
 

@@ -236,40 +236,17 @@ static void set_keyword(token_t *t)
 		*c_ptr = toupper(*c_ptr);
 		c_ptr++;
 	}
-
-	if (strcmp(string, "CONST") == 0)
-		t->symbol = CONST;
-
-	else if (strcmp(string, "VAR") == 0)
-		t->symbol = VAR;
-
-	else if (strcmp(string, "PROCEDURE") == 0)
-		t->symbol = PROCEDURE;
-
-	else if (strcmp(string, "CALL") == 0)
-		t->symbol = CALL;
-
-	else if (strcmp(string, "BEGIN") == 0)
-		t->symbol = BEGIN;
-
-	else if (strcmp(string, "END") == 0)
-		t->symbol = END;
-
-	else if (strcmp(string, "IF") == 0)
-		t->symbol = IF;
-
-	else if (strcmp(string, "ELSE") == 0)
-		t->symbol = ELSE;
-
-	else if (strcmp(string, "WHILE") == 0)
-		t->symbol = WHILE;
-
-	else if (strcmp(string, "ODD") == 0)
-		t->symbol = ODD;
-
-	else if (strcmp(string, "PRINT") == 0)
-		t->symbol = PRINT;
-
-	else if (strcmp(string, "SCAN") == 0)
-		t->symbol = SCAN;
+	
+	if (strcmp(string, "CONST") == 0) t->symbol = CONST;
+	else if (strcmp(string, "VAR") == 0) t->symbol = VAR;
+	else if (strcmp(string, "PROCEDURE") == 0) t->symbol = PROCEDURE;
+	else if (strcmp(string, "CALL") == 0) t->symbol = CALL;
+	else if (strcmp(string, "BEGIN") == 0) t->symbol = BEGIN;
+	else if (strcmp(string, "END") == 0) t->symbol = END;
+	else if (strcmp(string, "IF") == 0) t->symbol = IF;
+	else if (strcmp(string, "ELSE") == 0) t->symbol = ELSE;
+	else if (strcmp(string, "WHILE") == 0) t->symbol = WHILE;
+	else if (strcmp(string, "ODD") == 0) t->symbol = ODD;
+	else if (strcmp(string, "PRINT") == 0) t->symbol = PRINT;
+	else if (strcmp(string, "SCAN") == 0) t->symbol = SCAN;
 }

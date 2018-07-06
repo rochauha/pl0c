@@ -33,7 +33,7 @@ symbol_t* lookup(char *name)
 }
 
 
-static symbol_t *new_symbol(char *name, sym_type_t type, int value, int level)
+static symbol_t *new_symbol(char *name, sym_type_t type, int64_t value, size_t level)
 {
 	symbol_t *new_symbol_obj = calloc(1, sizeof(symbol_t));
 	strcpy(new_symbol_obj->name, name);
@@ -81,17 +81,9 @@ static bool insert_sym(symbol_t **table, symbol_t *new_symbol_obj)
 static void print_sym_type(sym_type_t type)
 {
 	switch (type) {
-		case SYM_CONST:
-		printf("SYM_CONST\n");
-		break;
-		
-		case SYM_VAR:
-		printf("SYM_VAR\n");
-		break;
-
-		case SYM_PROCEDURE:
-		printf("SYM_PROCEDURE\n");
-		break;
+		case SYM_CONST: printf("SYM_CONST\n"); break;
+		case SYM_VAR: printf("SYM_VAR\n"); break;
+		case SYM_PROCEDURE: printf("SYM_PROCEDURE\n"); break;
 	}
 }
 
@@ -103,7 +95,7 @@ void print_table(symbol_t **table)
 	while (current_symbol) {
 		printf("sym_type: ");
 		print_sym_type(current_symbol->type);
-		printf("sym_name: %s\nsym_value: %d\nnesting_level: %d\n\n", current_symbol->name, 
+		printf("sym_name: %s\nsym_value: %ld\nnesting_level: %zu\n\n", current_symbol->name, 
 			current_symbol->value, current_symbol->level);
 		current_symbol = current_symbol->next;
 	}

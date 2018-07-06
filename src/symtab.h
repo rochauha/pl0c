@@ -9,6 +9,7 @@
 #define SYMTAB_H
 
 #include <stdbool.h>
+#include <stdint.h>
 #include "ast.h"
 
 
@@ -21,8 +22,8 @@ typedef enum {
 
 typedef struct symbol {
 	char name[32];
-	int value;
-	int level; // nesting level
+	int64_t value;
+	size_t level; // nesting level
 	sym_type_t type;
 	struct symbol *next;
 	struct symbol *prev;

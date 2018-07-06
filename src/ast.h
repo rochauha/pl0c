@@ -8,7 +8,9 @@
 #ifndef AST_H
 #define AST_H
 
+#include <stdint.h>
 #include "token.h"
+
 
 typedef enum {
 	AST_ROOT,
@@ -26,10 +28,11 @@ typedef enum {
 
 } ast_label_t;
 
+
 typedef struct ast_node {
 	ast_label_t label;
 	char ident_name[32];
-	int num_value;
+	int64_t num_value;
 	struct ast_node *first_child;
 	struct ast_node *next_sibling;
 } ast_node_t;
