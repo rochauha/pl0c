@@ -12,6 +12,7 @@
 #include <stdint.h>
 #include "ast.h"
 
+#include <llvm-c/Core.h>
 
 typedef enum {
 	SYM_CONST,
@@ -22,7 +23,7 @@ typedef enum {
 
 typedef struct symbol {
 	char name[32];
-	int64_t value;
+	LLVMValueRef value;
 	size_t level; // nesting level
 	sym_type_t type;
 	struct symbol *next;
@@ -30,14 +31,22 @@ typedef struct symbol {
 } symbol_t;
 
 
-void run_semantic_checks(ast_node_t *root, symbol_t **symbol_table);
+void run_semantic_checks(ast_node_t *root, symbol_t **symbol_table, size_t* current_level);
 
 symbol_t* lookup(char *name);
+
+symbol_t *new_symbol(char *name, sym_type_t type, LLVMValueRef value, size_t level);
+
+size_t free_current_scope(size_t* current_level);
+
+bool insert_sym(symbol_t **table, symbol_t *new_symbol_obj);
 
 void print_table(symbol_t **table);
 
 bool semantic_error();
 
 size_t symbol_count();
+
+void update_ident_value(char* ident_name, LLVMValueRef value);
 
 #endif

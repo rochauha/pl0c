@@ -15,7 +15,6 @@
 
 
 static symbol_t *current_tip = NULL;
-static size_t current_level = 0; // globals have level 0
 static size_t total_symbol_count = 0;
 static bool error = false;
 
@@ -33,7 +32,7 @@ symbol_t* lookup(char *name)
 }
 
 
-static symbol_t *new_symbol(char *name, sym_type_t type, int64_t value, size_t level)
+symbol_t *new_symbol(char *name, sym_type_t type, LLVMValueRef value, size_t level)
 {
 	symbol_t *new_symbol_obj = calloc(1, sizeof(symbol_t));
 	strcpy(new_symbol_obj->name, name);
@@ -46,7 +45,7 @@ static symbol_t *new_symbol(char *name, sym_type_t type, int64_t value, size_t l
 }
 
 
-static bool insert_sym(symbol_t **table, symbol_t *new_symbol_obj)
+bool insert_sym(symbol_t **table, symbol_t *new_symbol_obj)
 {
 	symbol_t *current_symbol = *table;
 	if (!current_symbol) {
@@ -96,15 +95,15 @@ void print_table(symbol_t **table)
 		printf("sym_type: ");
 		print_sym_type(current_symbol->type);
 		printf("sym_name: %s\nsym_value: %ld\nnesting_level: %zu\n\n", current_symbol->name, 
-			current_symbol->value, current_symbol->level);
+			(int64_t)(current_symbol->value), current_symbol->level);
 		current_symbol = current_symbol->next;
 	}
 }
 
 
-static size_t free_current_scope()
+size_t free_current_scope(size_t* current_level)
 {
-	size_t level = current_level;
+	size_t level = *current_level;
 	size_t count = 0;
 	symbol_t *tmp;
 	while (current_tip && current_tip->level == level) {
@@ -118,15 +117,15 @@ static size_t free_current_scope()
 }
 
 
-void run_semantic_checks(ast_node_t *root, symbol_t **symbol_table)
+void run_semantic_checks(ast_node_t *root, symbol_t** symbol_table, size_t* current_level)
 {
 	if (root->label == AST_CONST_DECL) {
 		ast_node_t *current = root->first_child;
 		while (current) {
-			symbol_t *new_symbtab_entry = new_symbol(current->ident_name, 
-						SYM_CONST, current->first_child->num_value, current_level);
-			if (insert_sym(symbol_table, new_symbtab_entry)) {
-				printf("inserted CONST : %s\n", current->ident_name);
+			symbol_t *new_symtab_entry = new_symbol(current->ident_name, 
+						SYM_CONST, (LLVMValueRef)(current->first_child->num_value), *current_level);
+			if (insert_sym(symbol_table, new_symtab_entry)) {
+				//fprintf("inserted CONST : %s\n", current->ident_name);
 			}
 			else {
 				fprintf(stderr, "redeclaration of identifier %s\n", current->ident_name);
@@ -139,10 +138,10 @@ void run_semantic_checks(ast_node_t *root, symbol_t **symbol_table)
 	else if (root->label == AST_VAR_DECL) {
 		ast_node_t *current = root->first_child;
 		while (current) {
-			symbol_t *new_symbtab_entry = new_symbol(current->ident_name, 
-						SYM_VAR, 0, current_level);
-			if (insert_sym(symbol_table, new_symbtab_entry)) {
-				printf("inserted VAR : %s\n", current->ident_name);
+			symbol_t *new_symtab_entry = new_symbol(current->ident_name, 
+						SYM_VAR, 0, *current_level);
+			if (insert_sym(symbol_table, new_symtab_entry)) {
+				//printf("inserted VAR : %s\n", current->ident_name);
 			}
 			else {
 				fprintf(stderr, "redeclaration of identifier %s\n", current->ident_name);
@@ -154,10 +153,10 @@ void run_semantic_checks(ast_node_t *root, symbol_t **symbol_table)
 
 	else if (root->label == AST_PROC_DECL) {
 		ast_node_t *current = root->first_child;
-		symbol_t *new_symbtab_entry = new_symbol(root->ident_name,
-						SYM_PROCEDURE, 0, current_level);
-		if (insert_sym(symbol_table, new_symbtab_entry)) {
-			printf("inserted PROC : %s\n", current->ident_name);
+		symbol_t *new_symtab_entry = new_symbol(root->ident_name,
+						SYM_PROCEDURE, 0, *current_level);
+		if (insert_sym(symbol_table, new_symtab_entry)) {
+			//printf("inserted PROC : %s\n", current->ident_name);
 		}
 		else {
 			fprintf(stderr, "redeclaration of identifier %s\n", current->ident_name);
@@ -165,12 +164,12 @@ void run_semantic_checks(ast_node_t *root, symbol_t **symbol_table)
 		}
 		
 		// parse procedure body separately
-		current_level++;
+		(*current_level)++;
 		current = current->next_sibling;
-		run_semantic_checks(current, symbol_table);
-		printf("freed %zu symbols from scope %s\n", free_current_scope(), root->first_child->ident_name);
-		//printf("%zu\n", free_current_scope());
-		current_level--;
+		run_semantic_checks(current, symbol_table, current_level);
+		//printf("freed %zu symbols from global scope\n", free_current_scope(current_level));
+		//printf("%zu\n", free_current_scope(current_level));
+		(*current_level)--;
 	}
 
 	else if (root->label == AST_ASSIGN) {
@@ -186,14 +185,15 @@ void run_semantic_checks(ast_node_t *root, symbol_t **symbol_table)
 	else {
 		ast_node_t *c_root = root->first_child;
 		while (c_root) {
-			run_semantic_checks(c_root, symbol_table);
+			run_semantic_checks(c_root, symbol_table, current_level);
 			c_root = c_root->next_sibling;	
 		}
 	}
 
 	if (root->label == AST_ROOT) {
-		printf("freed %zu symbols from global scope\n", free_current_scope());
-		//printf("%zu\n", free_current_scope());
+		//printf("freed %zu symbols from global scope\n", free_current_scope(current_level));
+		//printf("%zu\n", free_current_scope(current_level));
+		current_tip = NULL;
 		*symbol_table = NULL;
 	}
 }
@@ -208,4 +208,11 @@ size_t symbol_count()
 bool semantic_error()
 {
 	return error;
+}
+
+
+void update_ident_value(char* ident_name, LLVMValueRef value)
+{
+	symbol_t* symtab_entry = lookup(ident_name);
+	symtab_entry->value = value;
 }
