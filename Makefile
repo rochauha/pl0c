@@ -1,14 +1,17 @@
 OUTPUT_BIN = pl0c
-OBJECTS = main.o symtab.o ast.o parser.o lexer.o token.o
+OBJECTS = main.o codegen.o symtab.o ast.o parser.o lexer.o token.o
 CC = clang
 CFLAGS = -std=c11 -c -O0 -Wall -g
-
+LDFLAGS = -lLLVM
 
 $(OUTPUT_BIN) : $(OBJECTS)
-	$(CC) -o $(OUTPUT_BIN) $(OBJECTS)
+	clang -o $(OUTPUT_BIN) $(OBJECTS) $(LDFLAGS)
 
 main.o: src/main.c
 	$(CC) $(CFLAGS) src/main.c
+
+codegen.o: src/codegen.c src/codegen.h
+	$(CC) $(CFLAGS) src/codegen.c
 
 symtab.o: src/symtab.c src/symtab.h
 	$(CC) $(CFLAGS) src/symtab.c

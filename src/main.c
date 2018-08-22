@@ -7,11 +7,17 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
+
+#include <llvm-c/Core.h>
+#include <llvm-c/Analysis.h>
+
 #include "token.h"
 #include "lexer.h"
 #include "parser.h"
 #include "ast.h"
 #include "symtab.h"
+#include "codegen.h"
 
 
 int main(int argc, char **argv)
@@ -30,17 +36,17 @@ int main(int argc, char **argv)
 
 	set_token_ptr(&token_list);
 	ast_node_t *root = parse();
-	//printf("%zu\n", ast_node_count());
-	//print_ast(root);
+	printf("%zu\n", ast_node_count());
+	print_ast(root);
 	
 	symbol_t *symbol_table = NULL;
-	run_semantic_checks(root, &symbol_table);
-	print_table(&symbol_table);
+	size_t current_level = 0;
+	run_semantic_checks(root, &symbol_table, &current_level);
 	
-	printf("%zu\n", symbol_count());
-	if (semantic_error()) {
-		exit(EXIT_FAILURE);
-	}
+	//print_table(&symbol_table);
+	
+	//printf("%zu\n", symbol_count());
+	if (semantic_error()) exit(EXIT_FAILURE);
 	
 	free(token_buf);
 
@@ -48,4 +54,22 @@ int main(int argc, char **argv)
 	The tree is not deleted manually (intentionally) as of now because rest
 	of the things are not in place yet.
 	*/
+
+
+	/*
+	No semantic error, so translate to LLVM IR and spit out ELF binary
+	*/
+	
+	LLVMModuleRef module = LLVMModuleCreateWithName(argv[1]);
+	LLVMBuilderRef builder = LLVMCreateBuilder();
+	
+	
+	generate_code(root, &symbol_table, &current_level, module, builder);
+
+	assert(current_level == 0);
+	
+	char* error_msg = NULL;
+	LLVMVerifyModule(module, LLVMAbortProcessAction, &error_msg);
+	LLVMDisposeMessage(error_msg);
+	LLVMDumpModule(module);
 }
