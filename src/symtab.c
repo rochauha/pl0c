@@ -168,7 +168,7 @@ void run_semantic_checks(ast_node_t *root, symbol_t** symbol_table, size_t* curr
 		current = current->next_sibling;
 		run_semantic_checks(current, symbol_table, current_level);
 		//printf("freed %zu symbols from global scope\n", free_current_scope(current_level));
-		//printf("%zu\n", free_current_scope(current_level));
+		free_current_scope(current_level);
 		(*current_level)--;
 	}
 
@@ -192,7 +192,7 @@ void run_semantic_checks(ast_node_t *root, symbol_t** symbol_table, size_t* curr
 
 	if (root->label == AST_ROOT) {
 		//printf("freed %zu symbols from global scope\n", free_current_scope(current_level));
-		//printf("%zu\n", free_current_scope(current_level));
+		free_current_scope(current_level);
 		current_tip = NULL;
 		*symbol_table = NULL;
 	}
