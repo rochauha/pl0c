@@ -133,6 +133,22 @@ void generate_globals(ast_node_t* current, symbol_t** symbol_table,
     }
 }
 
+void generate_statement(ast_node_t* node, LLVMModuleRef module,
+                        LLVMBuilderRef ir_builder)
+{
+    switch (node->label) {
+        case AST_ASSIGN:
+            assignment(node, ir_builder);
+            return;
+        case AST_CALL:
+            return;
+        case AST_PRINT:
+            return;
+        case AST_IF:
+            return;
+    }
+}
+
 LLVMValueRef generate_code(ast_node_t* root, symbol_t** symbol_table,
                            size_t* current_level, LLVMModuleRef module,
                            LLVMBuilderRef ir_builder)
@@ -163,12 +179,7 @@ LLVMValueRef generate_code(ast_node_t* root, symbol_t** symbol_table,
                 ast_node_t* statement = current->first_child;
 
                 while (statement) {
-                    if (statement->label == AST_ASSIGN) {
-                        assignment(statement, ir_builder);
-                    }
-
-                    else if (statement->label == AST_PRINT) {
-                    }
+                    generate_statement(statement, module, ir_builder);
                     statement = statement->next_sibling;
                 }
                 /* finally main() returns 0 */
