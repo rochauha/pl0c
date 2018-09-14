@@ -133,8 +133,8 @@ void generate_globals(ast_node_t* current, symbol_t** symbol_table,
     }
 }
 
-void generate_statement(ast_node_t* node, LLVMModuleRef module,
-                        LLVMBuilderRef ir_builder)
+static void generate_statement(ast_node_t* node, LLVMModuleRef module,
+                               LLVMBuilderRef ir_builder)
 {
     switch (node->label) {
         case AST_ASSIGN:
@@ -149,6 +149,26 @@ void generate_statement(ast_node_t* node, LLVMModuleRef module,
     }
 }
 
+static void generate_function(ast_node_t* node, LLVMModuleRef module,
+                              LLVMBuilderRef ir_builder)
+{
+    ast_node_t* function_head = node->first_child;
+    ast_node_t* function_body = function_head->next_sibling; // AST_BLOCK
+
+    ast_node_t* current = function_body->first_child;
+
+    LLVMTypeRef* param_type_list = NULL;
+
+    LLVMTypeRef function_type =
+        LLVMFunctionType(LLVMVoidType(), param_type_list, 0, false);
+    LLVMValueRef function =
+        LLVMAddFunction(module, function_head->ident_name, function_type);
+
+    LLVMBasicBlockRef entry = LLVMAppendBasicBlock(function, "entry");
+    LLVMPositionBuilderAtEnd(ir_builder, entry);
+    LLVMBuildRetVoid(ir_builder);
+}
+
 LLVMValueRef generate_code(ast_node_t* root, symbol_t** symbol_table,
                            size_t* current_level, LLVMModuleRef module,
                            LLVMBuilderRef ir_builder)
@@ -161,10 +181,16 @@ LLVMValueRef generate_code(ast_node_t* root, symbol_t** symbol_table,
                                  ir_builder);
             }
 
+            else if (current->label == AST_PROC_DECL) {
+                (*current_level)++;
+                generate_function(current, module, ir_builder);
+                (*current_level)--;
+            }
+
             else if (current->label == AST_STMT_BLOCK) {
                 /* Generate IR for main function here */
 
-                LLVMTypeRef param_type_list = NULL;
+                LLVMTypeRef* param_type_list = NULL;
 
                 /* function signature corresponding to int main() which
                  * returns 0 at the end */
