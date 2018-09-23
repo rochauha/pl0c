@@ -17,6 +17,10 @@
 #include "codegen.h"
 #include "symtab.h"
 
+const int MAX = 1000;
+static int index = 0;
+static symbol_t* scope_array[MAX];
+
 static LLVMValueRef number_value(ast_node_t* node)
 {
     return LLVMConstInt(LLVMInt64Type(), node->num_value, true);
@@ -133,6 +137,44 @@ void generate_globals(ast_node_t* current, symbol_t** symbol_table,
     }
 }
 
+void generate_locals(ast_node_t* current, symbol_t** symbol_table,
+                     size_t* current_level, LLVMModuleRef module,
+                     LLVMBuilderRef ir_builder)
+{
+    if (current->label == AST_CONST_DECL) {
+        ast_node_t* c_ident = current->first_child;
+        while (c_ident) {
+            LLVMValueRef local_c =
+                LLVMBuildAlloca(ir_builder, LLVMInt64Type(), c_ident->ident_name);
+            LLVMBuildStore(ir_builder, number_value(c_ident->first_child), local_c);
+            symbol_t* new_symtab_entry =
+                new_symbol(c_ident->ident_name, SYM_CONST, local_c, *current_level);
+
+            insert_sym(symbol_table, new_symtab_entry);
+
+            c_ident = c_ident->next_sibling;
+        }
+    }
+
+    else if (current->label == AST_VAR_DECL) {
+        ast_node_t* c_ident = current->first_child;
+        ast_node_t* dummy_node = calloc(1, sizeof(ast_node_t));
+
+        while (c_ident) {
+            LLVMValueRef local_v =
+                LLVMBuildAlloca(ir_builder, LLVMInt64Type(), c_ident->ident_name);
+            LLVMBuildStore(ir_builder, number_value(dummy_node), local_v);
+            symbol_t* new_symtab_entry =
+                new_symbol(c_ident->ident_name, SYM_CONST, local_v, *current_level);
+
+            insert_sym(symbol_table, new_symtab_entry);
+
+            c_ident = c_ident->next_sibling;
+        }
+        free(dummy_node);
+    }
+}
+
 static void generate_statement(ast_node_t* node, LLVMModuleRef module,
                                LLVMBuilderRef ir_builder)
 {
@@ -149,13 +191,12 @@ static void generate_statement(ast_node_t* node, LLVMModuleRef module,
     }
 }
 
-static void generate_function(ast_node_t* node, LLVMModuleRef module,
+static void generate_function(ast_node_t* node, symbol_t* symbol_table,
+                              size_t* current_level, LLVMModuleRef module,
                               LLVMBuilderRef ir_builder)
 {
     ast_node_t* function_head = node->first_child;
     ast_node_t* function_body = function_head->next_sibling; // AST_BLOCK
-
-    ast_node_t* current = function_body->first_child;
 
     LLVMTypeRef* param_type_list = NULL;
 
@@ -166,6 +207,29 @@ static void generate_function(ast_node_t* node, LLVMModuleRef module,
 
     LLVMBasicBlockRef entry = LLVMAppendBasicBlock(function, "entry");
     LLVMPositionBuilderAtEnd(ir_builder, entry);
+
+    ast_node_t* current = function_body->first_child;
+    ast_node_t* statement = NULL;
+    while (current) {
+        if (current->label == AST_CONST_DECL || current->label == AST_VAR_DECL) {
+            generate_locals(current, symbol_table, current_level, module,
+                            ir_builder);
+        }
+
+        else if (current->label == AST_STMT_BLOCK) {
+            statement = current->first_child;
+            while (statement) {
+                generate_statement(statement, module, ir_builder);
+                statement = statement->next_sibling;
+            }
+        }
+
+        else if (current) { // single statement
+            generate_statement(current, module, ir_builder);
+        }
+        current = current->next_sibling;
+    }
+
     LLVMBuildRetVoid(ir_builder);
 }
 
@@ -183,7 +247,10 @@ LLVMValueRef generate_code(ast_node_t* root, symbol_t** symbol_table,
 
             else if (current->label == AST_PROC_DECL) {
                 (*current_level)++;
-                generate_function(current, module, ir_builder);
+                generate_function(current, symbol_table, current_level, module,
+                                  ir_builder);
+                save_scope(&scope_array[index], current_level);
+                index++;
                 (*current_level)--;
             }
 
@@ -210,6 +277,10 @@ LLVMValueRef generate_code(ast_node_t* root, symbol_t** symbol_table,
                 }
                 /* finally main() returns 0 */
                 LLVMBuildRet(ir_builder, LLVMConstInt(LLVMInt32Type(), 0, true));
+            }
+
+            else if (current) { // single statement
+                generate_statement(current, module, ir_builder);
             }
             current = current->next_sibling;
         }
