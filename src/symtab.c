@@ -219,8 +219,18 @@ bool semantic_error()
     return error;
 }
 
-void update_ident_value(char* ident_name, LLVMValueRef value)
+/* Save details of the scope */
+void save_scope(symbol_t** location, size_t* current_level)
 {
-    symbol_t* symtab_entry = lookup(ident_name);
-    symtab_entry->value = value;
+    size_t level = *current_level;
+    symbol_t* tmp;
+    while (current_tip && current_tip->level == level) {
+        tmp = current_tip;
+        current_tip = current_tip->prev;
+    }
+    *location = tmp;
+
+    if (current_tip) {
+        current_tip->next = NULL;
+    }
 }
