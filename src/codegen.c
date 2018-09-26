@@ -21,14 +21,14 @@ const int MAX = 1000;
 static int index = 0;
 static symbol_t* scope_array[MAX];
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wswitch"
+#pragma clang diagnostic ignored "-Wreturn-type"
+
 static LLVMValueRef number_value(ast_node_t* node)
 {
     return LLVMConstInt(LLVMInt64Type(), node->num_value, true);
 }
-
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wswitch"
-#pragma clang diagnostic ignored "-Wreturn-type"
 
 static LLVMValueRef expression(ast_node_t* node, LLVMBuilderRef ir_builder)
 {
@@ -72,8 +72,6 @@ static LLVMValueRef expression(ast_node_t* node, LLVMBuilderRef ir_builder)
             return LLVMBuildLoad(ir_builder, variable_location_on_stack, "");
     }
 }
-
-#pragma clang diagnostic pop
 
 static void assignment(ast_node_t* node, LLVMBuilderRef ir_builder)
 {
@@ -176,8 +174,15 @@ void generate_locals(ast_node_t* current, symbol_t** symbol_table,
 }
 
 static void generate_statement(ast_node_t* node, LLVMModuleRef module,
-                               LLVMBuilderRef ir_builder)
+                               LLVMBuilderRef ir_builder, LLVMValueRef* function_ref)
 {
+    ast_node_t* child = NULL;
+    LLVMBasicBlockRef then_block = NULL;
+    LLVMBasicBlockRef else_block = NULL;
+    LLVMBasicBlockRef end_block = NULL;
+
+    LLVMValueRef function = *function_ref;
+
     switch (node->label) {
         case AST_ASSIGN:
             assignment(node, ir_builder);
@@ -187,11 +192,76 @@ static void generate_statement(ast_node_t* node, LLVMModuleRef module,
         case AST_PRINT:
             return;
         case AST_IF:
-            return;
+            then_block = LLVMAppendBasicBlock(function, "then_block");
+            else_block = LLVMAppendBasicBlock(function, "else_block");
+            end_block = LLVMAppendBasicBlock(function, "end_block");
+
+            child = node->first_child;
+            LLVMIntPredicate cmp;
+            switch (child->label) {
+                case AST_GTE:
+                    cmp = LLVMIntSGE;
+                    break;
+                case AST_LTE:
+                    cmp = LLVMIntSLE;
+                    break;
+                case AST_GT:
+                    cmp = LLVMIntSGT;
+                    break;
+                case AST_LT:
+                    cmp = LLVMIntSLT;
+                    break;
+                case AST_EQ:
+                    cmp = LLVMIntEQ;
+                    break;
+                case AST_NEQ:
+                    cmp = LLVMIntNE;
+                    break;
+            }
+
+            LLVMValueRef condition_lhs = expression(child->first_child, ir_builder);
+            LLVMValueRef condition_rhs =
+                expression(child->first_child->next_sibling, ir_builder);
+
+            LLVMValueRef condition = LLVMBuildICmp(ir_builder, cmp, condition_lhs,
+                                                   condition_rhs, "if_cond");
+
+            LLVMBuildCondBr(ir_builder, condition, then_block, else_block);
+
+            /* Generate for then block */
+            child = child->next_sibling;
+            LLVMPositionBuilderAtEnd(ir_builder, then_block);
+            if (child->label == AST_STMT_BLOCK) {
+                ast_node_t* statement = child->first_child;
+                while (statement) {
+                    generate_statement(statement, module, ir_builder, &function);
+                    statement = statement->next_sibling;
+                }
+            } else {
+                generate_statement(child, module, ir_builder, &function);
+            }
+            LLVMBuildBr(ir_builder, end_block);
+            LLVMPositionBuilderAtEnd(ir_builder, else_block);
+
+            /* Generate for else block */
+            child = child->next_sibling;
+            if (child && child->label == AST_STMT_BLOCK) {
+                ast_node_t* statement = child->first_child;
+                while (statement) {
+                    generate_statement(statement, module, ir_builder, &function);
+                    statement = statement->next_sibling;
+                }
+
+            } else if (child) {
+                generate_statement(child, module, ir_builder, &function);
+            }
+            LLVMBuildBr(ir_builder, end_block);
+            LLVMPositionBuilderAtEnd(ir_builder, end_block);
+            break;
     }
 }
 
-static void generate_function(ast_node_t* node, symbol_t* symbol_table,
+static void generate_function(ast_node_t* node, symbol_t** symbol_table,
                               size_t* current_level, LLVMModuleRef module,
                               LLVMBuilderRef ir_builder)
 {
@@ -219,18 +289,24 @@ static void generate_function(ast_node_t* node, symbol_t* symbol_table,
         else if (current->label == AST_STMT_BLOCK) {
             statement = current->first_child;
             while (statement) {
-                generate_statement(statement, module, ir_builder);
+                generate_statement(statement, module, ir_builder, &function);
                 statement = statement->next_sibling;
             }
         }
 
         else if (current) { // single statement
-            generate_statement(current, module, ir_builder);
+            generate_statement(current, module, ir_builder, &function);
         }
         current = current->next_sibling;
     }
 
     LLVMBuildRetVoid(ir_builder);
+}
+
+bool stmt_starts(ast_node_t* node)
+{
+    ast_label_t label = node->label;
+    return label == AST_IF || label == AST_ASSIGN || label == AST_CALL;
 }
 
 LLVMValueRef generate_code(ast_node_t* root, symbol_t** symbol_table,
@@ -254,7 +330,7 @@ LLVMValueRef generate_code(ast_node_t* root, symbol_t** symbol_table,
                 (*current_level)--;
             }
 
-            else if (current->label == AST_STMT_BLOCK) {
+            else if (current->label == AST_STMT_BLOCK || stmt_starts(current)) {
                 /* Generate IR for main function here */
 
                 LLVMTypeRef* param_type_list = NULL;
@@ -269,22 +345,21 @@ LLVMValueRef generate_code(ast_node_t* root, symbol_t** symbol_table,
                 LLVMBasicBlockRef entry = LLVMAppendBasicBlock(main, "entry");
                 LLVMPositionBuilderAtEnd(ir_builder, entry);
 
-                ast_node_t* statement = current->first_child;
+                ast_node_t* statement =
+                    current->first_child ? current->first_child : current;
 
                 while (statement) {
-                    generate_statement(statement, module, ir_builder);
+                    generate_statement(statement, module, ir_builder, &main);
                     statement = statement->next_sibling;
                 }
                 /* finally main() returns 0 */
                 LLVMBuildRet(ir_builder, LLVMConstInt(LLVMInt32Type(), 0, true));
             }
-
-            else if (current) { // single statement
-                generate_statement(current, module, ir_builder);
-            }
             current = current->next_sibling;
         }
-        free_current_scope(current_level);
+        save_scope(&scope_array[index], current_level);
         (*symbol_table) = NULL;
     }
 }
+
+#pragma clang diagnostic pop
