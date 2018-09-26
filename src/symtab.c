@@ -160,7 +160,7 @@ void run_semantic_checks(ast_node_t* root, symbol_t** symbol_table,
     else if (root->label == AST_PROC_DECL) {
         ast_node_t* current = root->first_child;
         symbol_t* new_symtab_entry =
-            new_symbol(root->ident_name, SYM_PROCEDURE, 0, *current_level);
+            new_symbol(current->ident_name, SYM_PROCEDURE, 0, *current_level);
         if (insert_sym(symbol_table, new_symtab_entry)) {
             // printf("inserted PROC : %s\n", current->ident_name);
         }
