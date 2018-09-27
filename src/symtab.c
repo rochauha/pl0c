@@ -192,6 +192,22 @@ void run_semantic_checks(ast_node_t* root, symbol_t** symbol_table,
         }
     }
 
+    else if (root->label == AST_CALL) {
+        symbol_t* found = lookup(root->first_child->ident_name);
+        if (!found) {
+            fprintf(stderr, "error: call to an undefined procedure \n");
+            error = true;
+        }
+
+        else if (found->type != SYM_PROCEDURE) {
+            fprintf(
+                stderr,
+                "error: Found local const/var identifier during function call.\n "
+                "      Change variable or procedure name to fix this\n");
+            error = true;
+        }
+    }
+
     else {
         ast_node_t* c_root = root->first_child;
         while (c_root) {
