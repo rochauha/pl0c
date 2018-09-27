@@ -173,8 +173,9 @@ void generate_locals(ast_node_t* current, symbol_t** symbol_table,
     }
 }
 
-static void generate_statement(ast_node_t* node, LLVMModuleRef module,
-                               LLVMBuilderRef ir_builder, LLVMValueRef* function_ref)
+static void generate_statement(ast_node_t* node, symbol_t** symbol_table,
+                               LLVMModuleRef module, LLVMBuilderRef ir_builder,
+                               LLVMValueRef* function_ref)
 {
     ast_node_t* child = NULL;
     LLVMBasicBlockRef then_block = NULL;
@@ -187,12 +188,17 @@ static void generate_statement(ast_node_t* node, LLVMModuleRef module,
     LLVMValueRef condition_rhs = NULL;
     LLVMIntPredicate cmp; // used for comparision
     LLVMValueRef function = *function_ref;
-
+    symbol_t* function_sym = NULL;
+    char* name = NULL;
     switch (node->label) {
         case AST_ASSIGN:
             assignment(node, ir_builder);
             return;
         case AST_CALL:
+            name = node->first_child->ident_name;
+            function_sym = lookup(node->first_child->ident_name);
+            assert(function_sym);
+            LLVMBuildCall(ir_builder, function_sym->value, NULL, 0, "");
             return;
         case AST_PRINT:
             return;
@@ -236,11 +242,13 @@ static void generate_statement(ast_node_t* node, LLVMModuleRef module,
             if (child->label == AST_STMT_BLOCK) {
                 ast_node_t* statement = child->first_child;
                 while (statement) {
-                    generate_statement(statement, module, ir_builder, &function);
+                    generate_statement(statement, symbol_table, module, ir_builder,
+                                       &function);
                     statement = statement->next_sibling;
                 }
             } else {
-                generate_statement(child, module, ir_builder, &function);
+                generate_statement(child, symbol_table, module, ir_builder,
+                                   &function);
             }
 
             LLVMBuildBr(ir_builder, end_block);
@@ -251,11 +259,13 @@ static void generate_statement(ast_node_t* node, LLVMModuleRef module,
             if (child && child->label == AST_STMT_BLOCK) {
                 ast_node_t* statement = child->first_child;
                 while (statement) {
-                    generate_statement(statement, module, ir_builder, &function);
+                    generate_statement(statement, symbol_table, module, ir_builder,
+                                       &function);
                     statement = statement->next_sibling;
                 }
             } else if (child) {
-                generate_statement(child, module, ir_builder, &function);
+                generate_statement(child, symbol_table, module, ir_builder,
+                                   &function);
             }
             LLVMBuildBr(ir_builder, end_block);
             LLVMPositionBuilderAtEnd(ir_builder, end_block);
@@ -305,11 +315,13 @@ static void generate_statement(ast_node_t* node, LLVMModuleRef module,
             if (child->label == AST_STMT_BLOCK) {
                 ast_node_t* statement = child->first_child;
                 while (statement) {
-                    generate_statement(statement, module, ir_builder, &function);
+                    generate_statement(statement, symbol_table, module, ir_builder,
+                                       &function);
                     statement = statement->next_sibling;
                 }
             } else {
-                generate_statement(child, module, ir_builder, &function);
+                generate_statement(child, symbol_table, module, ir_builder,
+                                   &function);
             }
             /* last part, check condition again */
             LLVMBuildBr(ir_builder, while_condition_block);
@@ -336,6 +348,14 @@ static void generate_function(ast_node_t* node, symbol_t** symbol_table,
     LLVMBasicBlockRef entry = LLVMAppendBasicBlock(function, "entry");
     LLVMPositionBuilderAtEnd(ir_builder, entry);
 
+    /* Add this function's details to symbol table */
+
+    (*current_level)--;
+    symbol_t* new_symtab_entry = new_symbol(function_head->ident_name, SYM_PROCEDURE,
+                                            function, *current_level);
+    insert_sym(symbol_table, new_symtab_entry);
+    (*current_level)++;
+
     ast_node_t* current = function_body->first_child;
     ast_node_t* statement = NULL;
     while (current) {
@@ -345,11 +365,12 @@ static void generate_function(ast_node_t* node, symbol_t** symbol_table,
         } else if (current->label == AST_STMT_BLOCK) {
             statement = current->first_child;
             while (statement) {
-                generate_statement(statement, module, ir_builder, &function);
+                generate_statement(statement, symbol_table, module, ir_builder,
+                                   &function);
                 statement = statement->next_sibling;
             }
         } else if (current) { // single statement
-            generate_statement(current, module, ir_builder, &function);
+            generate_statement(current, symbol_table, module, ir_builder, &function);
         }
         current = current->next_sibling;
     }
@@ -403,7 +424,8 @@ LLVMValueRef generate_code(ast_node_t* root, symbol_t** symbol_table,
                     current->first_child ? current->first_child : current;
 
                 while (statement) {
-                    generate_statement(statement, module, ir_builder, &main);
+                    generate_statement(statement, symbol_table, module, ir_builder,
+                                       &main);
                     statement = statement->next_sibling;
                 }
                 /* finally main() returns 0 */
