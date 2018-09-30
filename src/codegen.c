@@ -175,159 +175,99 @@ void generate_locals(ast_node_t* current, symbol_t** symbol_table,
 
 static void generate_statement(ast_node_t* node, symbol_t** symbol_table,
                                LLVMModuleRef module, LLVMBuilderRef ir_builder,
-                               LLVMValueRef* function_ref)
+                               LLVMValueRef function_ref)
 {
-    ast_node_t* child = NULL;
-    LLVMBasicBlockRef then_block = NULL;
-    LLVMBasicBlockRef else_block = NULL;
-    LLVMBasicBlockRef end_block = NULL;
-    LLVMBasicBlockRef while_condition_block = NULL; // holds basic block for while
-                                                    // loop condition
-    LLVMValueRef condition = NULL;
-    LLVMValueRef condition_lhs = NULL;
-    LLVMValueRef condition_rhs = NULL;
-    LLVMIntPredicate cmp; // used for comparision
-    LLVMValueRef function = *function_ref;
-    symbol_t* function_sym = NULL;
-    char* name = NULL;
-    switch (node->label) {
-        case AST_ASSIGN:
-            assignment(node, ir_builder);
-            return;
-        case AST_CALL:
-            name = node->first_child->ident_name;
-            function_sym = lookup(node->first_child->ident_name);
-            assert(function_sym);
-            LLVMBuildCall(ir_builder, function_sym->value, NULL, 0, "");
-            return;
-        case AST_PRINT:
-            return;
-        case AST_IF:
-            then_block = LLVMAppendBasicBlock(function, "then_block");
-            else_block = LLVMAppendBasicBlock(function, "else_block");
-            end_block = LLVMAppendBasicBlock(function, "end_block");
+    if (node->label == AST_ASSIGN) {
+        assignment(node, ir_builder);
+    }
 
-            child = node->first_child;
-            switch (child->label) {
-                case AST_GTE:
-                    cmp = LLVMIntSGE;
-                    break;
-                case AST_LTE:
-                    cmp = LLVMIntSLE;
-                    break;
-                case AST_GT:
-                    cmp = LLVMIntSGT;
-                    break;
-                case AST_LT:
-                    cmp = LLVMIntSLT;
-                    break;
-                case AST_EQ:
-                    cmp = LLVMIntEQ;
-                    break;
-                case AST_NEQ:
-                    cmp = LLVMIntNE;
-                    break;
+    else if (node->label == AST_CALL) {
+        symbol_t* function_sym = lookup(node->first_child->ident_name);
+        assert(function_sym);
+        LLVMBuildCall(ir_builder, function_sym->value, NULL, 0, "");
+    }
+
+    else if (node->label == AST_PRINT) {
+    }
+
+    else if (node->label == AST_WHILE || node->label == AST_IF) {
+        LLVMIntPredicate cmp;
+        LLVMBasicBlockRef condition_block =
+            LLVMAppendBasicBlock(function_ref, "condition_block");
+        LLVMBasicBlockRef then_block =
+            LLVMAppendBasicBlock(function_ref, "then_block");
+        LLVMBasicBlockRef else_block =
+            LLVMAppendBasicBlock(function_ref, "else_block");
+        LLVMBasicBlockRef end_block =
+            LLVMAppendBasicBlock(function_ref, "end_block");
+        LLVMBuildBr(ir_builder, condition_block);
+        LLVMPositionBuilderAtEnd(ir_builder, condition_block);
+
+        ast_node_t* child = node->first_child;
+        switch (child->label) {
+            case AST_GTE:
+                cmp = LLVMIntSGE;
+                break;
+            case AST_LTE:
+                cmp = LLVMIntSLE;
+                break;
+            case AST_GT:
+                cmp = LLVMIntSGT;
+                break;
+            case AST_LT:
+                cmp = LLVMIntSLT;
+                break;
+            case AST_EQ:
+                cmp = LLVMIntEQ;
+                break;
+            case AST_NEQ:
+                cmp = LLVMIntNE;
+                break;
+        }
+        LLVMValueRef lhs = expression(child->first_child, ir_builder);
+        LLVMValueRef rhs = expression(child->first_child->next_sibling, ir_builder);
+        LLVMValueRef condition =
+            LLVMBuildICmp(ir_builder, cmp, lhs, rhs, "condition");
+
+        LLVMBuildCondBr(ir_builder, condition, then_block, else_block);
+        LLVMPositionBuilderAtEnd(ir_builder, then_block);
+
+        child = child->next_sibling;
+        if (child->label == AST_STMT_BLOCK) {
+            ast_node_t* statement = child->first_child;
+            while (statement) {
+                generate_statement(statement, symbol_table, module, ir_builder,
+                                   function_ref);
+                statement = statement->next_sibling;
             }
-
-            condition_lhs = expression(child->first_child, ir_builder);
-            condition_rhs = expression(child->first_child->next_sibling, ir_builder);
-            condition = LLVMBuildICmp(ir_builder, cmp, condition_lhs, condition_rhs,
-                                      "if_cond");
-
-            LLVMBuildCondBr(ir_builder, condition, then_block, else_block);
-
-            /* Generate for then block */
-            child = child->next_sibling;
-            LLVMPositionBuilderAtEnd(ir_builder, then_block);
-            if (child->label == AST_STMT_BLOCK) {
-                ast_node_t* statement = child->first_child;
-                while (statement) {
-                    generate_statement(statement, symbol_table, module, ir_builder,
-                                       &function);
-                    statement = statement->next_sibling;
-                }
-            } else {
-                generate_statement(child, symbol_table, module, ir_builder,
-                                   &function);
-            }
-
+        } else {
+            generate_statement(child, symbol_table, module, ir_builder,
+                               function_ref);
+        }
+        /* last part, jump to condition again if it is a while loop */
+        if (node->label == AST_WHILE) {
+            LLVMBuildBr(ir_builder, condition_block);
+        } else {
             LLVMBuildBr(ir_builder, end_block);
-            LLVMPositionBuilderAtEnd(ir_builder, else_block);
+        }
 
-            /* Generate for else block */
-            child = child->next_sibling;
-            if (child && child->label == AST_STMT_BLOCK) {
-                ast_node_t* statement = child->first_child;
-                while (statement) {
-                    generate_statement(statement, symbol_table, module, ir_builder,
-                                       &function);
-                    statement = statement->next_sibling;
-                }
-            } else if (child) {
-                generate_statement(child, symbol_table, module, ir_builder,
-                                   &function);
+        LLVMPositionBuilderAtEnd(ir_builder, else_block);
+        /* Code for the else block. When no else block exists or in case of a while
+         * loop, simply branch to end_block */
+        child = child->next_sibling;
+        if (child && child->label == AST_STMT_BLOCK) {
+            ast_node_t* statement = child->first_child;
+            while (statement) {
+                generate_statement(statement, symbol_table, module, ir_builder,
+                                   function_ref);
+                statement = statement->next_sibling;
             }
-            LLVMBuildBr(ir_builder, end_block);
-            LLVMPositionBuilderAtEnd(ir_builder, end_block);
-            break;
-
-        case AST_WHILE:
-            while_condition_block =
-                LLVMAppendBasicBlock(function, "while_condition_block");
-            then_block = LLVMAppendBasicBlock(function, "then_block");
-            end_block = LLVMAppendBasicBlock(function, "end_block");
-
-            LLVMBuildBr(ir_builder, while_condition_block);
-            LLVMPositionBuilderAtEnd(ir_builder, while_condition_block);
-
-            child = node->first_child;
-            switch (child->label) {
-                case AST_GTE:
-                    cmp = LLVMIntSGE;
-                    break;
-                case AST_LTE:
-                    cmp = LLVMIntSLE;
-                    break;
-                case AST_GT:
-                    cmp = LLVMIntSGT;
-                    break;
-                case AST_LT:
-                    cmp = LLVMIntSLT;
-                    break;
-                case AST_EQ:
-                    cmp = LLVMIntEQ;
-                    break;
-                case AST_NEQ:
-                    cmp = LLVMIntNE;
-                    break;
-            }
-
-            condition_lhs = expression(child->first_child, ir_builder);
-            condition_rhs = expression(child->first_child->next_sibling, ir_builder);
-            condition = LLVMBuildICmp(ir_builder, cmp, condition_lhs, condition_rhs,
-                                      "while_condition");
-
-            LLVMBuildCondBr(ir_builder, condition, then_block, end_block);
-            LLVMPositionBuilderAtEnd(ir_builder, then_block);
-
-            /* body of while loop goes here */
-            child = child->next_sibling;
-            if (child->label == AST_STMT_BLOCK) {
-                ast_node_t* statement = child->first_child;
-                while (statement) {
-                    generate_statement(statement, symbol_table, module, ir_builder,
-                                       &function);
-                    statement = statement->next_sibling;
-                }
-            } else {
-                generate_statement(child, symbol_table, module, ir_builder,
-                                   &function);
-            }
-            /* last part, check condition again */
-            LLVMBuildBr(ir_builder, while_condition_block);
-
-            LLVMPositionBuilderAtEnd(ir_builder, end_block);
-            break;
+        } else if (child) {
+            generate_statement(child, symbol_table, module, ir_builder,
+                               function_ref);
+        }
+        LLVMBuildBr(ir_builder, end_block);
+        LLVMPositionBuilderAtEnd(ir_builder, end_block);
     }
 }
 
@@ -349,7 +289,6 @@ static void generate_function(ast_node_t* node, symbol_t** symbol_table,
     LLVMPositionBuilderAtEnd(ir_builder, entry);
 
     /* Add this function's details to symbol table */
-
     (*current_level)--;
     symbol_t* new_symtab_entry = new_symbol(function_head->ident_name, SYM_PROCEDURE,
                                             function, *current_level);
@@ -366,22 +305,22 @@ static void generate_function(ast_node_t* node, symbol_t** symbol_table,
             statement = current->first_child;
             while (statement) {
                 generate_statement(statement, symbol_table, module, ir_builder,
-                                   &function);
+                                   function);
                 statement = statement->next_sibling;
             }
         } else if (current) { // single statement
-            generate_statement(current, symbol_table, module, ir_builder, &function);
+            generate_statement(current, symbol_table, module, ir_builder, function);
         }
         current = current->next_sibling;
     }
-
     LLVMBuildRetVoid(ir_builder);
 }
 
 bool stmt_starts(ast_node_t* node)
 {
     ast_label_t label = node->label;
-    return label == AST_IF || label == AST_ASSIGN || label == AST_CALL;
+    return label == AST_IF || label == AST_ASSIGN || label == AST_CALL ||
+           label == AST_WHILE;
 }
 
 LLVMValueRef generate_code(ast_node_t* root, symbol_t** symbol_table,
@@ -422,10 +361,9 @@ LLVMValueRef generate_code(ast_node_t* root, symbol_t** symbol_table,
 
                 ast_node_t* statement =
                     current->first_child ? current->first_child : current;
-
                 while (statement) {
                     generate_statement(statement, symbol_table, module, ir_builder,
-                                       &main);
+                                       main);
                     statement = statement->next_sibling;
                 }
                 /* finally main() returns 0 */
