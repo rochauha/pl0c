@@ -57,7 +57,7 @@ ast_node_t* new_ast_node(token_t token);
 
 void append_child(ast_node_t* parent, ast_node_t* new_child);
 
-void print_ast(ast_node_t* root_ref);
+void print_ast(ast_node_t* root);
 
 size_t ast_node_count();
 

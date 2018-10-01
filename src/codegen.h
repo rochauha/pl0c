@@ -12,8 +12,7 @@
 #include "ast.h"
 #include "symtab.h"
 
-LLVMValueRef generate_code(ast_node_t* root, symbol_t** symbol_table,
-                           size_t* current_level, LLVMModuleRef module,
-                           LLVMBuilderRef ir_builder);
+void generate_code(ast_node_t* root, symbol_t** symbol_table, size_t* current_level,
+                   LLVMModuleRef module, LLVMBuilderRef ir_builder);
 
 #endif

@@ -83,21 +83,19 @@ static void assignment(ast_node_t* node, LLVMBuilderRef ir_builder)
     ast_node_t* rhs_node = lhs_node->next_sibling;
 
     LLVMValueRef variable_location_on_stack = lookup(lhs_node->ident_name)->value;
-
     LLVMBuildStore(ir_builder, expression(rhs_node, ir_builder),
                    variable_location_on_stack);
 }
 
-void generate_globals(ast_node_t* current, symbol_t** symbol_table,
-                      size_t* current_level, LLVMModuleRef module,
-                      LLVMBuilderRef ir_builder)
+static void generate_globals(ast_node_t* current, symbol_t** symbol_table,
+                             size_t* current_level, LLVMModuleRef module,
+                             LLVMBuilderRef ir_builder)
 {
     if (current->label == AST_CONST_DECL) {
         ast_node_t* c_ident = current->first_child;
         while (c_ident) {
             LLVMValueRef global_c =
                 LLVMAddGlobal(module, LLVMInt64Type(), c_ident->ident_name);
-
             LLVMValueRef global_c_val = number_value(c_ident->first_child);
 
             LLVMSetInitializer(global_c, global_c_val);
@@ -108,7 +106,6 @@ void generate_globals(ast_node_t* current, symbol_t** symbol_table,
                            *current_level);
 
             insert_sym(symbol_table, new_symtab_entry);
-
             c_ident = c_ident->next_sibling;
         }
     }
@@ -128,16 +125,15 @@ void generate_globals(ast_node_t* current, symbol_t** symbol_table,
                            LLVMGetNamedGlobal(module, c_ident->ident_name),
                            *current_level);
             insert_sym(symbol_table, new_symtab_entry);
-
             c_ident = c_ident->next_sibling;
         }
         free(dummy_node);
     }
 }
 
-void generate_locals(ast_node_t* current, symbol_t** symbol_table,
-                     size_t* current_level, LLVMModuleRef module,
-                     LLVMBuilderRef ir_builder)
+static void generate_locals(ast_node_t* current, symbol_t** symbol_table,
+                            size_t* current_level, LLVMModuleRef module,
+                            LLVMBuilderRef ir_builder)
 {
     if (current->label == AST_CONST_DECL) {
         ast_node_t* c_ident = current->first_child;
@@ -149,7 +145,6 @@ void generate_locals(ast_node_t* current, symbol_t** symbol_table,
                 new_symbol(c_ident->ident_name, SYM_CONST, local_c, *current_level);
 
             insert_sym(symbol_table, new_symtab_entry);
-
             c_ident = c_ident->next_sibling;
         }
     }
@@ -166,7 +161,6 @@ void generate_locals(ast_node_t* current, symbol_t** symbol_table,
                 new_symbol(c_ident->ident_name, SYM_CONST, local_v, *current_level);
 
             insert_sym(symbol_table, new_symtab_entry);
-
             c_ident = c_ident->next_sibling;
         }
         free(dummy_node);
@@ -279,7 +273,6 @@ static void generate_function(ast_node_t* node, symbol_t** symbol_table,
     ast_node_t* function_body = function_head->next_sibling; // AST_BLOCK
 
     LLVMTypeRef* param_type_list = NULL;
-
     LLVMTypeRef function_type =
         LLVMFunctionType(LLVMVoidType(), param_type_list, 0, false);
     LLVMValueRef function =
@@ -316,16 +309,15 @@ static void generate_function(ast_node_t* node, symbol_t** symbol_table,
     LLVMBuildRetVoid(ir_builder);
 }
 
-bool stmt_starts(ast_node_t* node)
+static bool stmt_starts(ast_node_t* node)
 {
     ast_label_t label = node->label;
     return label == AST_IF || label == AST_ASSIGN || label == AST_CALL ||
            label == AST_WHILE;
 }
 
-LLVMValueRef generate_code(ast_node_t* root, symbol_t** symbol_table,
-                           size_t* current_level, LLVMModuleRef module,
-                           LLVMBuilderRef ir_builder)
+void generate_code(ast_node_t* root, symbol_t** symbol_table, size_t* current_level,
+                   LLVMModuleRef module, LLVMBuilderRef ir_builder)
 {
     if (root->label == AST_ROOT) {
         ast_node_t* current = root->first_child;
@@ -372,7 +364,6 @@ LLVMValueRef generate_code(ast_node_t* root, symbol_t** symbol_table,
             current = current->next_sibling;
         }
         save_scope(&scope_array[index], current_level);
-        (*symbol_table) = NULL;
     }
 }
 
