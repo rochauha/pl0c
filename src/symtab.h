@@ -46,8 +46,6 @@ bool semantic_error();
 
 size_t symbol_count();
 
-void update_ident_value(char* ident_name, LLVMValueRef value);
-
 void save_scope(symbol_t** location, size_t* current_level);
 
 #endif

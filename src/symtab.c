@@ -184,7 +184,10 @@ void run_semantic_checks(ast_node_t* root, symbol_t** symbol_table,
         // printf("%s\n", root->first_child->ident_name);
         // look up left child
         symbol_t* found = lookup(root->first_child->ident_name);
-        if (found && found->type != VAR) {
+        if (!found) {
+            fprintf(stderr, "error: use of undefined identifier\n");
+            error = true;
+        } else if (found->type != VAR) {
             fprintf(stderr,
                     "error: cannot assign/reassign values to constants or "
                     "procedures\n");
