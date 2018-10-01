@@ -224,3 +224,15 @@ size_t ast_node_count()
 {
     return global_node_count;
 }
+
+// Delete nodes recursively
+void cleanup_ast(ast_node_t** root_ref)
+{
+    if (!(*root_ref))
+        return;
+    cleanup_ast(&((*root_ref)->first_child));
+    cleanup_ast(&((*root_ref)->next_sibling));
+    free(*root_ref);
+    *root_ref = NULL;
+    global_node_count--;
+}

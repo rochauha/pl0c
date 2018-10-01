@@ -69,4 +69,8 @@ int main(int argc, char** argv)
     LLVMVerifyModule(module, LLVMAbortProcessAction, &error_msg);
     LLVMDisposeMessage(error_msg);
     LLVMDumpModule(module);
+
+    cleanup_ast(&root);
+    assert(root == NULL);
+    assert(ast_node_count() == 0);
 }
