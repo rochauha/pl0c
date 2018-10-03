@@ -1,5 +1,7 @@
 Here's the grammer followed by `pl0c`, which is a slightly modified version of the original grammar found on [Wikipedia](https://en.wikipedia.org/wiki/PL/0 "link to the Wikipedia page"). <br>
 
+Even though the grammar supports nested functions, this implementation does not.
+
 Changes:
 - Consecutive statements in a particular scope must be enclosed within a BEGIN-END block
 - `DO` and `THEN` are no longer valid keywords
