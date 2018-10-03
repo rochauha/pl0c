@@ -242,13 +242,15 @@ bool semantic_error()
 void save_scope(symbol_t** location, size_t* current_level)
 {
     size_t level = *current_level;
-    symbol_t* tmp;
+    symbol_t* tmp = NULL;
     while (current_tip && current_tip->level == level) {
         tmp = current_tip;
         current_tip = current_tip->prev;
     }
-    *location = tmp;
+    if (!tmp)
+        return;
 
+    *location = tmp;
     if (current_tip) {
         current_tip->next = NULL;
     }

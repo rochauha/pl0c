@@ -10,6 +10,7 @@
  */
 
 #include <assert.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -20,6 +21,22 @@
 const int MAX = 1000;
 static int index = 0;
 static symbol_t* scope_array[MAX];
+
+static void cleanup_scopes()
+{
+    symbol_t* tmp = NULL;
+    symbol_t* current = NULL;
+    for (int i = 0; i < index; i++) {
+        if (scope_array[i]) {
+            current = scope_array[i];
+            while (current) {
+                tmp = current;
+                current = current->next;
+                free(tmp);
+            }
+        }
+    }
+}
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wswitch"
@@ -364,6 +381,8 @@ void generate_code(ast_node_t* root, symbol_t** symbol_table, size_t* current_le
             current = current->next_sibling;
         }
         save_scope(&scope_array[index], current_level);
+        index++;
+        cleanup_scopes();
     }
 }
 
