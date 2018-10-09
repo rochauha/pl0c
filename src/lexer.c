@@ -41,6 +41,12 @@ bool scan(const char* source, char** buf)
     char c = ' ';
 
     while (c != EOF) {
+        if (c == '#') { // single line comments starting with #
+            while (c != '\n') {
+                c = fgetc(fin);
+            }
+        }
+
         if (!valid_char(c)) {
             clear_token(&token_holder);
             token_holder.symbol = ERROR;
