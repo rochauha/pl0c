@@ -6,7 +6,7 @@
 
 #include <assert.h>
 #include <stdio.h>
-#include <stdlib.h>
+#include <string.h>
 
 #include <llvm-c/Analysis.h>
 #include <llvm-c/Core.h>
@@ -20,10 +20,30 @@
 
 int main(int argc, char** argv)
 {
-    /* Memory buffer to be associated with the token stream */
-    char* token_buf;
-    scan(argv[1], &token_buf);
 
+    char* file_name = NULL;
+
+    switch (argc) {
+        case 1:
+            fprintf(stderr, "error: no input file\n");
+            exit(EXIT_FAILURE);
+
+        case 2:
+            file_name = argv[1];
+            break;
+
+        default:
+            fprintf(stderr, "Usage: %s <file_name>.pl0\n", argv[0]);
+            exit(EXIT_FAILURE);
+    }
+
+    char* token_buf;
+    if (!scan(file_name, &token_buf)) {
+        fprintf(stderr, "error: %s not found\n", file_name);
+        exit(EXIT_FAILURE);
+    }
+
+    /* Memory buffer to be associated with the token stream */
     token_t* token_list = (token_t*)(token_buf);
     /*
     token_t *token_ptr = token_list;
@@ -34,8 +54,8 @@ int main(int argc, char** argv)
 
     set_token_ptr(&token_list);
     ast_node_t* root = parse();
-    printf("%zu\n", ast_node_count());
-    print_ast(root);
+    // printf("%zu\n", ast_node_count());
+    // print_ast(root);
 
     symbol_t* symbol_table = NULL;
     size_t current_level = 0;
@@ -49,28 +69,27 @@ int main(int argc, char** argv)
 
     free(token_buf);
 
-    /*
-    The tree is not deleted manually (intentionally) as of now because rest
-    of the things are not in place yet.
-    */
+    /* No semantic error, so translate to LLVM IR */
 
-    /*
-    No semantic error, so translate to LLVM IR and spit out ELF binary
-    */
-
-    LLVMModuleRef module = LLVMModuleCreateWithName(argv[1]);
+    LLVMModuleRef module = LLVMModuleCreateWithName(file_name);
     LLVMBuilderRef builder = LLVMCreateBuilder();
 
     generate_code(root, &symbol_table, &current_level, module, builder);
-
     assert(current_level == 0);
 
     char* error_msg = NULL;
     LLVMVerifyModule(module, LLVMAbortProcessAction, &error_msg);
-    LLVMDisposeMessage(error_msg);
-    LLVMDumpModule(module);
+
+    // LLVMDumpModule(module);
 
     cleanup_ast(&root);
     assert(root == NULL);
     assert(ast_node_count() == 0);
+
+    size_t len = strlen(file_name);
+    file_name[len - 3] = 'l';
+    file_name[len - 2] = 'l';
+    file_name[len - 1] = '\0';
+
+    LLVMPrintModuleToFile(module, file_name, &error_msg);
 }

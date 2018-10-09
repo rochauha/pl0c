@@ -6,8 +6,8 @@
 
 #define _POSIX_C_SOURCE 200809L // for using open_memstream
 #include <ctype.h>
-#include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "lexer.h"
@@ -25,11 +25,14 @@ static bool valid_char(char c)
 /*
  * Scan entire source file
  */
-void scan(const char* source, char** buf)
+bool scan(const char* source, char** buf)
 {
     token_t token_holder;
     size_t init_len = 0;
     FILE* fin = fopen(source, "r");
+    if (!fin) {
+        return false;
+    }
 
     /* file stream associated with memory buffer */
     FILE* token_stream = open_memstream(buf, &init_len);
@@ -210,6 +213,7 @@ void scan(const char* source, char** buf)
     fwrite(&token_holder, 1, sizeof(token_holder), token_stream);
     fflush(token_stream);
     fclose(token_stream);
+    return true;
 }
 
 /*

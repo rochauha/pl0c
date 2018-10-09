@@ -8,7 +8,8 @@
 #define LEXER_H
 
 #include "token.h"
+#include <stdbool.h>
 
-void scan(const char* source, char** buf);
+bool scan(const char* source, char** buf);
 
 #endif
