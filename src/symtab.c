@@ -211,6 +211,36 @@ void run_semantic_checks(ast_node_t* root, symbol_t** symbol_table,
         }
     }
 
+    else if (root->label == AST_PRINT) {
+        if (root->first_child->label == AST_IDENT) {
+            symbol_t* found = lookup(root->first_child->ident_name);
+            if (!found) {
+                fprintf(stderr, "error: call to an undefined procedure \n");
+                error = true;
+            }
+
+            else if (found->type == SYM_PROCEDURE) {
+                fprintf(stderr,
+                        "error: Identifier to be printed should be a var/const.\n ");
+                error = true;
+            }
+        }
+    }
+
+    else if (root->label == AST_SCAN) {
+        symbol_t* found = lookup(root->first_child->ident_name);
+        if (!found) {
+            fprintf(stderr, "error: use of undefined identifier \n");
+            error = true;
+        }
+
+        else if (found->type != SYM_VAR) {
+            fprintf(stderr,
+                    "error: can't change value of a constant or procedure\n");
+            error = true;
+        }
+    }
+
     else {
         ast_node_t* c_root = root->first_child;
         while (c_root) {

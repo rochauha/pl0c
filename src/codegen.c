@@ -10,7 +10,6 @@
  */
 
 #include <assert.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -199,6 +198,28 @@ static void generate_statement(ast_node_t* node, symbol_t** symbol_table,
     }
 
     else if (node->label == AST_PRINT) {
+        LLVMValueRef print64 = LLVMGetNamedFunction(module, "print64");
+
+        ast_label_t label = node->first_child->label;
+        LLVMValueRef num = NULL;
+        if (label == AST_NUM) {
+            num = number_value(node->first_child);
+        }
+
+        else if (label == AST_IDENT) {
+            LLVMValueRef variable_location_on_stack =
+                lookup(node->first_child->ident_name)->value;
+            num = LLVMBuildLoad(ir_builder, variable_location_on_stack, "");
+        }
+        LLVMBuildCall(ir_builder, print64, &num, 1, "");
+    }
+
+    else if (node->label == AST_SCAN) {
+        LLVMValueRef scan64 = LLVMGetNamedFunction(module, "scan64");
+        LLVMValueRef num = LLVMBuildCall(ir_builder, scan64, NULL, 0, "");
+        LLVMValueRef variable_location_on_stack =
+            lookup(node->first_child->ident_name)->value;
+        LLVMBuildStore(ir_builder, num, variable_location_on_stack);
     }
 
     else if (node->label == AST_WHILE || node->label == AST_IF) {
@@ -336,6 +357,21 @@ static bool stmt_starts(ast_node_t* node)
 void generate_code(ast_node_t* root, symbol_t** symbol_table, size_t* current_level,
                    LLVMModuleRef module, LLVMBuilderRef ir_builder)
 {
+    LLVMTypeRef print64_param_type_list[] = { LLVMInt64Type() };
+    LLVMTypeRef print64_type =
+        LLVMFunctionType(LLVMVoidType(), print64_param_type_list, 1, false);
+
+    LLVMTypeRef* scan64_param_type_list = NULL;
+    LLVMTypeRef scan64_type =
+        LLVMFunctionType(LLVMInt64Type(), scan64_param_type_list, 0, false);
+
+/* Ignore unused variable warnings here */
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-variable"
+    LLVMValueRef print64 = LLVMAddFunction(module, "print64", print64_type);
+    LLVMValueRef scan64 = LLVMAddFunction(module, "scan64", scan64_type);
+#pragma clang diagnostic pop
+
     if (root->label == AST_ROOT) {
         ast_node_t* current = root->first_child;
         while (current) {
