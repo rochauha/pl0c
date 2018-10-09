@@ -1,0 +1,24 @@
+# Compute kth fibonacci number
+# first line : k
+# output : kth fibonacci number
+# initially let f1 = f2 = 1
+
+var f1, f2, fn, k;
+
+begin
+	scan k;
+	
+	f1 = 1;
+	f2 = 1;
+	fn = 1;
+
+	while k-2 > 0:
+	begin
+		fn = f1 + f2;
+		f1 = f2;
+		f2 = fn;
+		k = k - 1;
+	end
+	
+	print fn;
+end
