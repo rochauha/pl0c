@@ -20,7 +20,6 @@
 
 int main(int argc, char** argv)
 {
-
     char* file_name = NULL;
 
     switch (argc) {
@@ -92,4 +91,9 @@ int main(int argc, char** argv)
     file_name[len - 1] = '\0';
 
     LLVMPrintModuleToFile(module, file_name, &error_msg);
+
+    // Cleanup LLVM data structures
+    LLVMDisposeBuilder(builder);
+    LLVMDisposeModule(module);
+    LLVMDisposeMessage(error_msg);
 }
