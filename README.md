@@ -49,7 +49,7 @@ $ ./fibonacci
 10
 55
 $
-$ ./build.sh fibonacci.pl0 natural_recurse.pl0  # get executable named natural_recurse
+$ ./build.sh natural_recurse.pl0  # get executable named natural_recurse
 $ ./natural_recurse
 5
 1

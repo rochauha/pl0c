@@ -7,6 +7,7 @@ Changes:
 - Added keywords `PRINT` and `SCAN` for I/O
 - Even though the grammar supports nested functions, this implementation does not
 - All keywords are case insensitive
+- Use of `#` for starting single line comments
 
 ```
 program = block .
