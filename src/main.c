@@ -53,6 +53,14 @@ int main(int argc, char** argv)
 
     set_token_ptr(&token_list);
     ast_node_t* root = parse();
+
+    if (syntax_error()) {
+        cleanup_ast(&root);
+        assert(root == NULL);
+        assert(ast_node_count() == 0);
+        exit(EXIT_FAILURE);
+    }
+
     // printf("%zu\n", ast_node_count());
     // print_ast(root);
 
@@ -63,8 +71,12 @@ int main(int argc, char** argv)
     // print_table(&symbol_table);
 
     // printf("%zu\n", symbol_count());
-    if (semantic_error())
+    if (semantic_error()) {
+        cleanup_ast(&root);
+        assert(root == NULL);
+        assert(ast_node_count() == 0);
         exit(EXIT_FAILURE);
+    }
 
     free(token_buf);
 

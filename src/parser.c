@@ -28,6 +28,13 @@ static ast_node_t* parse_expression();
 static ast_node_t* parse_term();
 static ast_node_t* parse_factor();
 
+static bool error = false;
+
+bool syntax_error()
+{
+    return error;
+}
+
 void set_token_ptr(token_t** t)
 {
     token_ptr = *t;
@@ -49,6 +56,7 @@ static void accept(token_symbol_t s)
     }
 
     else {
+        error = true;
         printf("error: expected symbol ");
         print_symbol(s);
         printf(" but found ");

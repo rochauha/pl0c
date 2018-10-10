@@ -7,11 +7,15 @@
 #ifndef PARSER_H
 #define PARSER_H
 
+#include <stdbool.h>
+
 #include "ast.h"
 #include "token.h"
 
 void set_token_ptr(token_t** t);
 
 ast_node_t* parse();
+
+bool syntax_error();
 
 #endif
