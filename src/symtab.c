@@ -172,6 +172,10 @@ void run_semantic_checks(ast_node_t* root, symbol_t** symbol_table,
 
         // parse procedure body separately
         (*current_level)++;
+        if (*current_level >= 2) {
+            fprintf(stderr, "error: nested functions are not supported\n");
+            error = true;
+        }
         current = current->next_sibling;
         run_semantic_checks(current, symbol_table, current_level);
         // printf("freed %zu symbols from global scope\n",
