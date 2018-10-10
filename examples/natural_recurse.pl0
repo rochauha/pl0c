@@ -1,0 +1,22 @@
+# Print first k natural numbers recursively
+# first line : k
+# output : first k natural numbers, one on each line
+
+var k;
+
+procedure print_rec:
+var num;
+begin
+	num = k;
+	if num > 0:
+	begin
+		k = k - 1;
+		call print_rec;
+		print num;
+	end
+end
+
+begin
+	scan k;
+	call print_rec;
+end
