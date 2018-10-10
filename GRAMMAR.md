@@ -1,12 +1,12 @@
 Here's the grammer followed by `pl0c`, which is a slightly modified version of the original grammar found on [Wikipedia](https://en.wikipedia.org/wiki/PL/0 "link to the Wikipedia page"). <br>
 
-Even though the grammar supports nested functions, this implementation does not.
-
 Changes:
-- Consecutive statements in a particular scope must be enclosed within a BEGIN-END block
+- Consecutive `statement`s must be enclosed within a BEGIN-END block
 - `DO` and `THEN` are no longer valid keywords
 - Procedure definitions, `IF`, `ELSE`, `WHILE` are followed by a colon
 - Added keywords `PRINT` and `SCAN` for I/O
+- Even though the grammar supports nested functions, this implementation does not
+- All keywords are case insensitive
 
 ```
 program = block .
@@ -50,4 +50,3 @@ Based on Wirth’s EBNF notation, we have the following rules:
 
 For more details on Wirth's EBNF notation, head over to 
 [this page](https://en.wikipedia.org/wiki/Wirth_syntax_notation "Wikipedia link to Wirth syntax notation"). <br>
-Note that in this implementation, all keywords are case insensitive.
