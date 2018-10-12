@@ -255,9 +255,24 @@ static void generate_statement(ast_node_t* node, symbol_t** symbol_table,
             case AST_NEQ:
                 cmp = LLVMIntNE;
                 break;
+            case AST_ODD:
+                cmp = LLVMIntNE;
+                break;
         }
         LLVMValueRef lhs = expression(child->first_child, ir_builder);
-        LLVMValueRef rhs = expression(child->first_child->next_sibling, ir_builder);
+        LLVMValueRef rhs = NULL;
+
+        if (child->label == AST_ODD) {
+            // handle ODD keyword separately -> expression % 2 != 0
+            lhs = LLVMBuildSRem(ir_builder, lhs,
+                                LLVMConstInt(LLVMInt64Type(), 2, true), "");
+            rhs = LLVMConstInt(LLVMInt64Type(), 0, true);
+        }
+
+        else {
+            rhs = expression(child->first_child->next_sibling, ir_builder);
+        }
+
         LLVMValueRef condition =
             LLVMBuildICmp(ir_builder, cmp, lhs, rhs, "condition");
 
