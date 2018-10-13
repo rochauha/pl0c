@@ -366,7 +366,7 @@ static bool stmt_starts(ast_node_t* node)
 {
     ast_label_t label = node->label;
     return label == AST_IF || label == AST_ASSIGN || label == AST_CALL ||
-           label == AST_WHILE;
+           label == AST_WHILE || label == AST_PRINT || label == AST_SCAN;
 }
 
 void generate_code(ast_node_t* root, symbol_t** symbol_table, size_t* current_level,
@@ -419,8 +419,9 @@ void generate_code(ast_node_t* root, symbol_t** symbol_table, size_t* current_le
                 LLVMBasicBlockRef entry = LLVMAppendBasicBlock(main, "entry");
                 LLVMPositionBuilderAtEnd(ir_builder, entry);
 
-                ast_node_t* statement =
-                    current->first_child ? current->first_child : current;
+                ast_node_t* statement = current->label == AST_STMT_BLOCK
+                                            ? current->first_child
+                                            : current;
                 while (statement) {
                     generate_statement(statement, symbol_table, module, ir_builder,
                                        main);

@@ -1,7 +1,7 @@
 OUTPUT_BIN = pl0c
 OBJECTS = main.o codegen.o symtab.o ast.o parser.o lexer.o token.o
 CC = clang
-CFLAGS = -std=c11 -c -O0 -Wall -g
+CFLAGS = -std=c11 -c -O3 -Wall -g
 LDFLAGS = -lLLVM
 
 $(OUTPUT_BIN) : $(OBJECTS)
